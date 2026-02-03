@@ -58,6 +58,40 @@ export default function AuthPage() {
     verifyToken();
   }, [navigate]);
 
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`${API_URL}/auth/google-login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: tokenResponse.access_token,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem("token", data.access_token);
+          toast.success("Login successful!");
+          navigate("/dashboard");
+        } else {
+          const errorData = await response.json();
+          toast.error("Google login failed", { description: errorData.detail });
+        }
+      } catch (error) {
+        toast.error("Google login failed", {
+          description: "Network error occurred.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onError: () => {
+      toast.error("Google login failed");
+    },
+  });
+
   if (isCheckingAuth) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -147,40 +181,6 @@ export default function AuthPage() {
       setIsLoading(false);
     }
   };
-
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(`${API_URL}/auth/google-login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            token: tokenResponse.access_token,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          localStorage.setItem("token", data.access_token);
-          toast.success("Login successful!");
-          navigate("/dashboard");
-        } else {
-          const errorData = await response.json();
-          toast.error("Google login failed", { description: errorData.detail });
-        }
-      } catch (error) {
-        toast.error("Google login failed", {
-          description: "Network error occurred.",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    onError: () => {
-      toast.error("Google login failed");
-    },
-  });
 
   return (
     <div className="min-h-screen w-full lg:grid lg:grid-cols-2">

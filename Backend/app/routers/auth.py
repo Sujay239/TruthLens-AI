@@ -371,6 +371,10 @@ def login(user_credentials: schemas.UserLogin, db: Session = Depends(database.ge
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+@router.post("/logout")
+def logout():
+    return {"message": "Logged out successfully"}
+
 @router.post("/forgot-password")
 async def forgot_password(
     request: schemas.ForgotPasswordRequest, 

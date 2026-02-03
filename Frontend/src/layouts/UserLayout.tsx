@@ -117,9 +117,22 @@ export default function UserLayout() {
     },
   ];
 
-  const handleLogout = () => {
-    // Clear any auth tokens here
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_URL}/auth/logout`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+    } catch (error) {
+      console.error("Logout failed", error);
+    } finally {
+      localStorage.clear();
+      // Optional: Clear session storage if used
+      sessionStorage.clear();
+      navigate("/auth");
+    }
   };
 
   return (
