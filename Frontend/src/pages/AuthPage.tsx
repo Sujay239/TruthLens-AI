@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,28 @@ export default function AuthPage() {
   });
 
   const API_URL = import.meta.env.VITE_API_URL;
+
+  useEffect(() => {
+    const verifyToken = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const response = await fetch(`${API_URL}/auth/myData`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (response.ok) {
+            navigate("/dashboard");
+          }
+        } catch (error) {
+          // Token invalid or expired, do nothing (user stays on auth page)
+          console.error("Token verification failed:", error);
+        }
+      }
+    };
+    verifyToken();
+  }, [navigate]);
 
   const handleGithubLogin = () => {
     const CLIENT_ID = "Ov23liDMQfI42XVPRzpE";
