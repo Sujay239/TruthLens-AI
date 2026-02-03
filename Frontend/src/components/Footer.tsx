@@ -124,13 +124,13 @@ export default function Footer() {
             digital world.
           </p>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-foreground">
+            <a href="/privacy" className="hover:text-foreground">
               Privacy Policy
             </a>
-            <a href="#" className="hover:text-foreground">
+            <a href="/terms" className="hover:text-foreground">
               Terms of Service
             </a>
-            <a href="#" className="hover:text-slate-900">
+            <a href="/ethics" className="hover:text-foreground">
               Ethics
             </a>
           </div>

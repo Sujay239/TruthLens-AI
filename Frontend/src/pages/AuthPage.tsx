@@ -205,6 +205,9 @@ export default function AuthPage() {
             <a href="/terms" className="hover:text-white transition-colors">
               Terms
             </a>
+            <a href="/ethics" className="hover:text-white transition-colors">
+              Ethics
+            </a>
           </div>
         </div>
       </div>
@@ -522,6 +525,13 @@ export default function AuthPage() {
                       className="underline underline-offset-4 hover:text-primary transition-colors"
                     >
                       Privacy Policy
+                    </a>
+                    , and{" "}
+                    <a
+                      href="/ethics"
+                      className="underline underline-offset-4 hover:text-primary transition-colors"
+                    >
+                      Ethics
                     </a>
                     .
                   </div>
