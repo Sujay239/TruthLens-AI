@@ -16,10 +16,12 @@ import { Shield, ArrowRight, CheckCircle2, Github } from "lucide-react";
 import authBg from "../assets/auth-bg.png";
 import { toast } from "sonner";
 import { useGoogleLogin } from "@react-oauth/google";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 export default function AuthPage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [registerData, setRegisterData] = useState({
     firstName: "",
@@ -42,15 +44,27 @@ export default function AuthPage() {
           });
           if (response.ok) {
             navigate("/dashboard");
+            return;
+          } else {
+            localStorage.removeItem("token");
           }
         } catch (error) {
-          // Token invalid or expired, do nothing (user stays on auth page)
           console.error("Token verification failed:", error);
+          localStorage.removeItem("token");
         }
       }
+      setIsCheckingAuth(false);
     };
     verifyToken();
   }, [navigate]);
+
+  if (isCheckingAuth) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <LoadingSpinner className="h-10 w-10 text-primary" />
+      </div>
+    );
+  }
 
   const handleGithubLogin = () => {
     const CLIENT_ID = "Ov23liDMQfI42XVPRzpE";
