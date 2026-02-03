@@ -57,10 +57,7 @@ const Hero = () => {
             size="lg"
             className="min-w-48 h-12 text-lg hover:bg-muted"
             onClick={() => {
-              const analysisSection = document.querySelector(
-                '[data-section="analysis"]'
-              );
-              analysisSection?.scrollIntoView({ behavior: "smooth" });
+              navigate("/demo");
             }}
           >
             <Eye className="h-5 w-5 mr-2" />

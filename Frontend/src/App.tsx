@@ -5,6 +5,7 @@ import GithubCallback from "./pages/GithubCallback";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Ethics from "./pages/Ethics";
+import DemoPage from "./pages/DemoPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import UserLayout from "./layouts/UserLayout";
 import UserDashboard from "./pages/dashboard/UserDashboard";
@@ -39,6 +40,7 @@ function App() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/ethics" element={<Ethics />} />
+          <Route path="/demo" element={<DemoPage />} />
           <Route
             path="/auth/forgot-password"
             element={<ForgotPasswordPage />}
