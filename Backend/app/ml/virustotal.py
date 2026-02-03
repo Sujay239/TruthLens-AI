@@ -60,16 +60,8 @@ class VirusTotalClient:
         if response.status_code == 200:
             data = response.json()
             analysis_id = data['data']['id']
-            # We must wait for analysis or return "Pending". 
-            # Returning Pending is better for UI, but let's try a quick wait.
-            # Actually, typically we return "Queued". 
-            return {
-                "label": "Queued",
-                "score": 0,
-                "threat_level": "Unknown",
-                "analysis": "File uploaded for scanning. Result pending.",
-                "analysis_id": analysis_id
-            }
+            # Wait for analysis to complete
+            return self._wait_for_analysis(analysis_id)
         else:
             return {"error": f"Upload failed: {response.status_code}"}
 
@@ -84,29 +76,34 @@ class VirusTotalClient:
         if response.status_code == 200:
             data = response.json()
             analysis_id = data['data']['id']
-            
-            # 2. Get Analysis Result (Wait a moment or just get stats if cached?)
-            # VT URL scanning is async. We usually follow the self link.
-            # For this simplified version, let's try to fetch the analysis immediately.
-            # Often URL scans are fast or cached.
-            
-            # Use the analysis ID to get the report
-            report_url = f"{BASE_URL}/analyses/{analysis_id}"
-            
-            # Simple polling (up to 3 seconds)
-            for _ in range(3):
-                time.sleep(1)
-                rep = requests.get(report_url, headers=self.headers)
-                if rep.status_code == 200:
-                    r_data = rep.json()
-                    status = r_data['data']['attributes']['status']
-                    if status == 'completed':
-                        return self._parse_analysis(r_data)
-            
-            return {"label": "Queued", "analysis": "URL scan submitted. Check back strictly later."}
+            return self._wait_for_analysis(analysis_id)
 
         else:
              return {"error": f"URL Scan failed: {response.status_code}"}
+
+    def _wait_for_analysis(self, analysis_id):
+        """Polls the analysis endpoint until completion or timeout."""
+        report_url = f"{BASE_URL}/analyses/{analysis_id}"
+        print(f"[VirusTotal] Waiting for analysis: {analysis_id}")
+        
+        # Wait up to 60 seconds (VT can be slow)
+        max_retries = 30 
+        for i in range(max_retries):
+            response = requests.get(report_url, headers=self.headers)
+            if response.status_code == 200:
+                data = response.json()
+                status = data['data']['attributes']['status']
+                if status == 'completed':
+                    return self._parse_analysis(data)
+            
+            time.sleep(2) # Poll every 2 seconds
+            
+        return {
+            "label": "Queued", 
+            "score": 0, 
+            "threat_level": "Unknown", 
+            "analysis": "Analysis timed out. Please check back later."
+        }
 
     def _parse_report(self, data):
         """Parses /files/{id} response"""
@@ -167,5 +164,5 @@ class VirusTotalClient:
             "malicious_count": malicious,
             "threat_level": threat_level,
             "signature": "URL Threat",
-            "analysis": f"URL flagged by {malicious} vendors."
+            "analysis": f"Flagged by {malicious} vendors."
         }

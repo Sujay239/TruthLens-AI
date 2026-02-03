@@ -14,6 +14,7 @@ import {
   Activity,
   ShieldCheck,
   ShieldAlert,
+  Shield,
   FileText,
   Image as ImageIcon,
   Video,
@@ -261,6 +262,9 @@ export default function UserDashboard() {
                       {item.type === "text" && (
                         <FileText className="h-5 w-5 text-orange-500" />
                       )}
+                      {item.type === "malware" && (
+                        <Shield className="h-5 w-5 text-rose-500" />
+                      )}
                       {item.type === "audio" && (
                         <Activity className="h-5 w-5 text-yellow-500" />
                       )}
@@ -279,17 +283,40 @@ export default function UserDashboard() {
                   <div className="flex items-center gap-4">
                     <Badge
                       variant={
-                        item.status === "Real"
+                        ["Real", "Clean", "Safe"].includes(item.status)
                           ? "default"
-                          : item.status === "Fake"
+                          : ["Fake", "Malicious", "High Threat"].includes(
+                                item.status,
+                              )
                             ? "destructive"
-                            : "secondary"
+                            : ["Suspicious", "Warning"].includes(item.status)
+                              ? "outline"
+                              : "secondary"
                       }
-                      className={
-                        item.status === "Real"
-                          ? "bg-emerald-500 hover:bg-emerald-600"
-                          : ""
-                      }
+                      className={`
+                        ${
+                          ["Real", "Clean", "Safe"].includes(item.status)
+                            ? "bg-emerald-500 hover:bg-emerald-600"
+                            : ""
+                        }
+                        ${
+                          ["Fake", "Malicious", "High Threat"].includes(
+                            item.status,
+                          )
+                            ? "bg-red-500 hover:bg-red-600"
+                            : ""
+                        }
+                        ${
+                          ["Queued", "Processing"].includes(item.status)
+                            ? "bg-blue-500 hover:bg-blue-600 text-white"
+                            : ""
+                        }
+                        ${
+                          ["Unknown"].includes(item.status)
+                            ? "bg-gray-500 hover:bg-gray-600 text-white"
+                            : ""
+                        }
+                      `}
                     >
                       {item.status}
                     </Badge>
