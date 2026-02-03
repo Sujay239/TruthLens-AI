@@ -82,7 +82,9 @@ export default function Footer() {
             <h3 className="font-semibold text-foreground">Connect</h3>
             <div className="flex items-center gap-4">
               <a
-                href="#"
+                href="https://github.com/Sujay239"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground"
               >
                 <Github className="h-5 w-5" />
@@ -94,13 +96,15 @@ export default function Footer() {
                 <Twitter className="h-5 w-5" />
               </a>
               <a
-                href="#"
+                href="https://www.linkedin.com/in/sujay-kumar-kotal-5b9817282/"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground"
               >
                 <Linkedin className="h-5 w-5" />
               </a>
               <a
-                href="#"
+                href="mailto:sujaykumarkotal8520@gmail.com"
                 className="text-muted-foreground hover:text-foreground"
               >
                 <Mail className="h-5 w-5" />

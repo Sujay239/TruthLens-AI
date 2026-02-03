@@ -18,9 +18,12 @@ import MalwareDetection from "./pages/dashboard/MalwareDetection";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { Toaster } from "sonner";
 
+import PageTitleUpdater from "./components/PageTitleUpdater";
+
 function App() {
   return (
     <Router>
+      <PageTitleUpdater />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/auth" element={<AuthPage />} />

@@ -29,13 +29,19 @@ export default function Header() {
         {/* Right Side: Actions */}
         <div className="flex items-center gap-2 md:gap-6">
           {/* GitHub Link (Ghost Button variant for clean look) */}
-          <Button
-            variant="ghost"
-            className="hidden md:flex gap-2 text-foreground/80 hover:text-foreground"
+          <a
+            href="https://github.com/Sujay239/TruthLens-AI"
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            <Star className="h-4 w-4" />
-            <span className="font-semibold">Star on GitHub</span>
-          </Button>
+            <Button
+              variant="ghost"
+              className="hidden md:flex gap-2 text-foreground/80 hover:text-foreground"
+            >
+              <Star className="h-4 w-4" />
+              <span className="font-semibold">Star on GitHub</span>
+            </Button>
+          </a>
 
           <ModeToggle />
 
