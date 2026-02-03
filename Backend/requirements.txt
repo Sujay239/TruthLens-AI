@@ -15,3 +15,5 @@ scikit-learn
 torchvision
 pillow
 fastapi-mail
+google-auth
+requests

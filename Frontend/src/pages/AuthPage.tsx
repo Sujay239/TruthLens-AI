@@ -15,6 +15,7 @@ import {
 import { Shield, ArrowRight, CheckCircle2, Github } from "lucide-react";
 import authBg from "../assets/auth-bg.png";
 import { toast } from "sonner";
+import { useGoogleLogin } from "@react-oauth/google";
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -28,6 +29,12 @@ export default function AuthPage() {
   });
 
   const API_URL = import.meta.env.VITE_API_URL;
+
+  const handleGithubLogin = () => {
+    const CLIENT_ID = "Ov23liDMQfI42XVPRzpE";
+    const REDIRECT_URI = "http://localhost:5173/auth/github/callback";
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=user:email`;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,6 +111,40 @@ export default function AuthPage() {
       setIsLoading(false);
     }
   };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`${API_URL}/auth/google-login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: tokenResponse.access_token,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem("token", data.access_token);
+          toast.success("Login successful!");
+          navigate("/dashboard");
+        } else {
+          const errorData = await response.json();
+          toast.error("Google login failed", { description: errorData.detail });
+        }
+      } catch (error) {
+        toast.error("Google login failed", {
+          description: "Network error occurred.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onError: () => {
+      toast.error("Google login failed");
+    },
+  });
 
   return (
     <div className="min-h-screen w-full lg:grid lg:grid-cols-2">
@@ -288,6 +329,7 @@ export default function AuthPage() {
                       variant="outline"
                       className="w-full h-11 font-medium hover:bg-muted/50 transition-colors"
                       type="button"
+                      onClick={() => googleLogin()}
                     >
                       <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                         <path
@@ -313,6 +355,7 @@ export default function AuthPage() {
                       variant="outline"
                       className="w-full h-11 font-medium hover:bg-muted/50 transition-colors"
                       type="button"
+                      onClick={handleGithubLogin}
                     >
                       <Github className="mr-2 h-4 w-4" />
                       GitHub
@@ -433,6 +476,7 @@ export default function AuthPage() {
                       variant="outline"
                       className="w-full h-11 font-medium hover:bg-muted/50 transition-colors"
                       type="button"
+                      onClick={() => googleLogin()}
                     >
                       <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                         <path
@@ -458,6 +502,7 @@ export default function AuthPage() {
                       variant="outline"
                       className="w-full h-11 font-medium hover:bg-muted/50 transition-colors"
                       type="button"
+                      onClick={handleGithubLogin}
                     >
                       <Github className="mr-2 h-4 w-4" />
                       GitHub

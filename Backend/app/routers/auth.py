@@ -15,6 +15,211 @@ router = APIRouter(
     tags=["Authentication"]
 )
 
+# Google Auth Config
+GOOGLE_CLIENT_ID = "469032517353-n3pg2fh1gkupkbjoqfsr1anbcjqqt21b.apps.googleusercontent.com"
+
+# GitHub Auth Config
+GITHUB_CLIENT_ID = "Ov23liDMQfI42XVPRzpE"
+GITHUB_CLIENT_SECRET = "3af19222fe03da3a0ad2eeb0a99dd8b272680320"
+
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+import secrets
+import string
+import requests
+
+class GoogleLoginRequest(schemas.BaseModel):
+    token: str
+
+class GithubLoginRequest(schemas.BaseModel):
+    code: str
+
+@router.post("/github-login", response_model=schemas.Token)
+def github_login(request: GithubLoginRequest, db: Session = Depends(database.get_db)):
+    try:
+        # 1. Exchange code for access token
+        token_url = "https://github.com/login/oauth/access_token"
+        headers = {"Accept": "application/json"}
+        data = {
+            "client_id": GITHUB_CLIENT_ID,
+            "client_secret": GITHUB_CLIENT_SECRET,
+            "code": request.code
+        }
+        
+        response = requests.post(token_url, headers=headers, json=data)
+        if response.status_code != 200:
+             raise HTTPException(status_code=400, detail="Failed to retrieve access token from GitHub")
+             
+        token_data = response.json()
+        access_token = token_data.get("access_token")
+        
+        if not access_token:
+             error_desc = token_data.get("error_description", "Unknown error")
+             raise HTTPException(status_code=400, detail=f"GitHub Error: {error_desc}")
+
+        # 2. user info
+        user_url = "https://api.github.com/user"
+        auth_headers = {"Authorization": f"token {access_token}"}
+        user_response = requests.get(user_url, headers=auth_headers)
+        
+        if user_response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Failed to retrieve user info from GitHub")
+            
+        user_info = user_response.json()
+        
+        # 3. Handle Email (GitHub emails can be private)
+        email = user_info.get("email")
+        if not email:
+            # Fetch emails manually
+            emails_url = "https://api.github.com/user/emails"
+            emails_response = requests.get(emails_url, headers=auth_headers)
+            if emails_response.status_code == 200:
+                emails = emails_response.json()
+                # Find primary verified email
+                for e in emails:
+                    if e.get("primary") and e.get("verified"):
+                        email = e.get("email")
+                        break
+                # Fallback to any verified email
+                if not email:
+                     for e in emails:
+                        if e.get("verified"):
+                            email = e.get("email")
+                            break
+                            
+        if not email:
+            raise HTTPException(status_code=400, detail="No verified email found for this GitHub account")
+
+        # 4. Process User
+        username = user_info.get("login")
+        avatar = user_info.get("avatar_url")
+        name = user_info.get("name") or username
+        
+        name_parts = name.split()
+        first_name = name_parts[0] if name_parts else ""
+        last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
+
+        # Check in DB
+        user = db.query(models.User).filter(models.User.email == email.lower()).first()
+        
+        if not user:
+            # Check for username collision and handle it
+            if db.query(models.User).filter(models.User.username == username).first():
+                username = f"{username}{secrets.randbelow(1000)}"
+                
+            alphabet = string.ascii_letters + string.digits
+            password = ''.join(secrets.choice(alphabet) for i in range(16))
+            hashed_password = utils.get_password_hash(password)
+            
+            user = models.User(
+                email=email.lower(),
+                username=username,
+                hashed_password=hashed_password,
+                first_name=first_name,
+                last_name=last_name,
+                full_name=name,
+                avatar=avatar,
+                is_active=True
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            
+        access_token_expires = timedelta(minutes=utils.ACCESS_TOKEN_EXPIRE_MINUTES)
+        jwt_token = utils.create_access_token(
+            data={"sub": user.username}, expires_delta=access_token_expires
+        )
+        return {"access_token": jwt_token, "token_type": "bearer"}
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"GitHub Login Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"GitHub login failed: {str(e)}")
+
+@router.post("/google-login", response_model=schemas.Token)
+def google_login(request: GoogleLoginRequest, db: Session = Depends(database.get_db)):
+    try:
+        # Try fetching user info with the token (treating it as an Access Token)
+        # This is compatible with useGoogleLogin hook in React
+        response = google_requests.requests.get(
+            'https://www.googleapis.com/oauth2/v3/userinfo',
+            headers={'Authorization': f'Bearer {request.token}'}
+        )
+        
+        email = None
+        picture = None
+        first_name = ""
+        last_name = ""
+        
+        if response.status_code == 200:
+            user_info = response.json()
+            email = user_info.get('email')
+            first_name = user_info.get('given_name', '')
+            last_name = user_info.get('family_name', '')
+            picture = user_info.get('picture')
+        else:
+            # If fetching fails, try verifying it as an ID Token (fallback)
+            try:
+                id_info = id_token.verify_oauth2_token(
+                    request.token, 
+                    google_requests.Request(), 
+                    GOOGLE_CLIENT_ID
+                )
+                email = id_info.get('email')
+                first_name = id_info.get('given_name', '')
+                last_name = id_info.get('family_name', '')
+                picture = id_info.get('picture')
+            except ValueError:
+                 raise HTTPException(status_code=401, detail="Invalid Google token")
+
+        if not email:
+            raise HTTPException(status_code=400, detail="Email not found in Google token")
+
+        # Check if user exists
+        user = db.query(models.User).filter(models.User.email == email.lower()).first()
+        
+        if not user:
+            # Register new user
+            username = email.split('@')[0]
+            # Ensure username is unique
+            if db.query(models.User).filter(models.User.username == username).first():
+                username = f"{username}{secrets.randbelow(1000)}"
+            
+            # Generate random password
+            alphabet = string.ascii_letters + string.digits
+            password = ''.join(secrets.choice(alphabet) for i in range(16))
+            hashed_password = utils.get_password_hash(password)
+            
+            full_name = f"{first_name} {last_name}".strip()
+            
+            user = models.User(
+                email=email.lower(),
+                username=username,
+                hashed_password=hashed_password,
+                first_name=first_name,
+                last_name=last_name,
+                full_name=full_name,
+                avatar=picture,
+                is_active=True
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            
+        # Create access token
+        access_token_expires = timedelta(minutes=utils.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = utils.create_access_token(
+            data={"sub": user.username}, expires_delta=access_token_expires
+        )
+        return {"access_token": access_token, "token_type": "bearer"}
+
+    except ValueError as e:
+        # Invalid token
+        raise HTTPException(status_code=401, detail=f"Invalid Google token: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Google login failed: {str(e)}")
+
 @router.get("/myData", response_model=schemas.UserData)
 def get_my_data(current_user: models.User = Depends(dependencies.get_current_user)):
     return {

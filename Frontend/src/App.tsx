@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
+import GithubCallback from "./pages/GithubCallback";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
@@ -20,44 +21,55 @@ import { Toaster } from "sonner";
 
 import PageTitleUpdater from "./components/PageTitleUpdater";
 
-function App() {
-  return (
-    <Router>
-      <PageTitleUpdater />
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsOfService />} />
-        <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
-        {/* Protected Dashboard Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<UserLayout />}>
-            <Route index element={<UserDashboard />} />
-            <Route path="history" element={<AnalysisHistory />} />
-            <Route path="settings" element={<UserSettings />} />
-            <Route path="tools/fake-news" element={<FakeNewsDetection />} />
-            <Route
-              path="tools/deepfake-image"
-              element={<DeepfakeImageDetection />}
-            />
-            <Route
-              path="tools/deepfake-video"
-              element={<DeepfakeVideoDetection />}
-            />
-            <Route
-              path="tools/voice-detection"
-              element={<DeepfakeVoiceDetection />}
-            />
-            <Route path="tools/ai-text" element={<AiTextDetection />} />
-            <Route path="tools/malware-scan" element={<MalwareDetection />} />
+function App() {
+  const G_CLIENT_ID =
+    "469032517353-n3pg2fh1gkupkbjoqfsr1anbcjqqt21b.apps.googleusercontent.com";
+
+  return (
+    <GoogleOAuthProvider clientId={G_CLIENT_ID}>
+      <Router>
+        <PageTitleUpdater />
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/auth/github/callback" element={<GithubCallback />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route
+            path="/auth/forgot-password"
+            element={<ForgotPasswordPage />}
+          />
+
+          {/* Protected Dashboard Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<UserLayout />}>
+              <Route index element={<UserDashboard />} />
+              <Route path="history" element={<AnalysisHistory />} />
+              <Route path="settings" element={<UserSettings />} />
+              <Route path="tools/fake-news" element={<FakeNewsDetection />} />
+              <Route
+                path="tools/deepfake-image"
+                element={<DeepfakeImageDetection />}
+              />
+              <Route
+                path="tools/deepfake-video"
+                element={<DeepfakeVideoDetection />}
+              />
+              <Route
+                path="tools/voice-detection"
+                element={<DeepfakeVoiceDetection />}
+              />
+              <Route path="tools/ai-text" element={<AiTextDetection />} />
+              <Route path="tools/malware-scan" element={<MalwareDetection />} />
+            </Route>
           </Route>
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <Toaster />
-    </Router>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
+      </Router>
+    </GoogleOAuthProvider>
   );
 }
 
