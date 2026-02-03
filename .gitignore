@@ -1,0 +1,36 @@
+# System Files
+.DS_Store
+Thumbs.db
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node.js / Frontend
+node_modules/
+dist/
+build/
+.npm
+*.local
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+.env
+
+# Project Specific
+Backend/uploads/
+Backend/app/ml/temp_*
+Backend/app/ml/__pycache__/
+Backend/*.db
+Backend/*.sqlite3
+
+# Artifacts
+.gemini/

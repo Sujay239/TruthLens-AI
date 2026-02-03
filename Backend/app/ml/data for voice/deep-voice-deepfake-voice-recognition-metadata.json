@@ -1,0 +1,425 @@
+{
+  "@context": {
+    "@language": "en",
+    "@vocab": "https://schema.org/",
+    "citeAs": "cr:citeAs",
+    "column": "cr:column",
+    "conformsTo": "dct:conformsTo",
+    "cr": "http://mlcommons.org/croissant/",
+    "data": { "@id": "cr:data", "@type": "@json" },
+    "dataBiases": "cr:dataBiases",
+    "dataCollection": "cr:dataCollection",
+    "dataType": { "@id": "cr:dataType", "@type": "@vocab" },
+    "dct": "http://purl.org/dc/terms/",
+    "extract": "cr:extract",
+    "field": "cr:field",
+    "fileProperty": "cr:fileProperty",
+    "fileObject": "cr:fileObject",
+    "fileSet": "cr:fileSet",
+    "format": "cr:format",
+    "includes": "cr:includes",
+    "isEnumeration": "cr:isEnumeration",
+    "isLiveDataset": "cr:isLiveDataset",
+    "jsonPath": "cr:jsonPath",
+    "key": "cr:key",
+    "md5": "cr:md5",
+    "parentField": "cr:parentField",
+    "path": "cr:path",
+    "personalSensitiveInformation": "cr:personalSensitiveInformation",
+    "recordSet": "cr:recordSet",
+    "references": "cr:references",
+    "regex": "cr:regex",
+    "repeated": "cr:repeated",
+    "replace": "cr:replace",
+    "sc": "https://schema.org/",
+    "separator": "cr:separator",
+    "source": "cr:source",
+    "subField": "cr:subField",
+    "transform": "cr:transform",
+    "wd": "https://www.wikidata.org/wiki/"
+  },
+  "alternateName": "Using machine learning to detect when speech is AI-Generated",
+  "conformsTo": "http://mlcommons.org/croissant/1.0",
+  "license": {
+    "@type": "sc:CreativeWork",
+    "name": "Other (specified in description)"
+  },
+  "distribution": [
+    {
+      "contentUrl": "https://www.kaggle.com/api/v1/datasets/download/birdy654/deep-voice-deepfake-voice-recognition",
+      "contentSize": "3.685 GB",
+      "encodingFormat": "application/zip",
+      "@id": "archive.zip",
+      "@type": "cr:FileObject",
+      "name": "archive.zip",
+      "description": "Archive containing all the contents of the DEEP-VOICE: DeepFake Voice Recognition dataset"
+    },
+    {
+      "includes": "*.wav",
+      "containedIn": { "@id": "archive.zip" },
+      "encodingFormat": "audio/wav",
+      "@id": "audio-wav_fileset",
+      "@type": "cr:FileSet",
+      "name": "audio/wav files",
+      "description": "audio/wav files contained in archive.zip"
+    },
+    {
+      "includes": "*.mp3",
+      "containedIn": { "@id": "archive.zip" },
+      "encodingFormat": "audio/mpeg",
+      "@id": "audio-mpeg_fileset",
+      "@type": "cr:FileSet",
+      "name": "audio/mpeg files",
+      "description": "audio/mpeg files contained in archive.zip"
+    },
+    {
+      "contentUrl": "KAGGLE/DATASET-balanced.csv",
+      "containedIn": { "@id": "archive.zip" },
+      "encodingFormat": "text/csv",
+      "@id": "DATASET-balanced.csv_fileobject",
+      "@type": "cr:FileObject",
+      "name": "DATASET-balanced.csv",
+      "description": "Balanced dataset for machine learning, features extracted from each 1 second of audio."
+    }
+  ],
+  "recordSet": [
+    {
+      "field": [
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "chroma_stft" }
+          },
+          "@id": "DATASET-balanced.csv/chroma_stft",
+          "@type": "cr:Field",
+          "name": "chroma_stft",
+          "description": "Chromagram"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "rms" }
+          },
+          "@id": "DATASET-balanced.csv/rms",
+          "@type": "cr:Field",
+          "name": "rms",
+          "description": "Root Mean Square"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "spectral_centroid" }
+          },
+          "@id": "DATASET-balanced.csv/spectral_centroid",
+          "@type": "cr:Field",
+          "name": "spectral_centroid",
+          "description": "Spectral Centroid"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "spectral_bandwidth" }
+          },
+          "@id": "DATASET-balanced.csv/spectral_bandwidth",
+          "@type": "cr:Field",
+          "name": "spectral_bandwidth",
+          "description": "Spectral Bandwidth"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "rolloff" }
+          },
+          "@id": "DATASET-balanced.csv/rolloff",
+          "@type": "cr:Field",
+          "name": "rolloff",
+          "description": "Rolloff"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "zero_crossing_rate" }
+          },
+          "@id": "DATASET-balanced.csv/zero_crossing_rate",
+          "@type": "cr:Field",
+          "name": "zero_crossing_rate",
+          "description": "Zero Crossing Rate"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc1" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc1",
+          "@type": "cr:Field",
+          "name": "mfcc1",
+          "description": "MFCC 1"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc2" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc2",
+          "@type": "cr:Field",
+          "name": "mfcc2",
+          "description": "MFCC 2"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc3" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc3",
+          "@type": "cr:Field",
+          "name": "mfcc3",
+          "description": "MFCC 3"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc4" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc4",
+          "@type": "cr:Field",
+          "name": "mfcc4",
+          "description": "MFCC 4"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc5" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc5",
+          "@type": "cr:Field",
+          "name": "mfcc5",
+          "description": "MFCC 5"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc6" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc6",
+          "@type": "cr:Field",
+          "name": "mfcc6",
+          "description": "MFCC 6"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc7" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc7",
+          "@type": "cr:Field",
+          "name": "mfcc7",
+          "description": "MFCC 7"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc8" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc8",
+          "@type": "cr:Field",
+          "name": "mfcc8",
+          "description": "MFCC 8"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc9" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc9",
+          "@type": "cr:Field",
+          "name": "mfcc9",
+          "description": "MFCC 9"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc10" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc10",
+          "@type": "cr:Field",
+          "name": "mfcc10",
+          "description": "MFCC 10"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc11" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc11",
+          "@type": "cr:Field",
+          "name": "mfcc11",
+          "description": "MFCC 11"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc12" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc12",
+          "@type": "cr:Field",
+          "name": "mfcc12",
+          "description": "MFCC 12"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc13" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc13",
+          "@type": "cr:Field",
+          "name": "mfcc13",
+          "description": "MFCC 13"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc14" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc14",
+          "@type": "cr:Field",
+          "name": "mfcc14",
+          "description": "MFCC 14"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc15" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc15",
+          "@type": "cr:Field",
+          "name": "mfcc15",
+          "description": "MFCC 15"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc16" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc16",
+          "@type": "cr:Field",
+          "name": "mfcc16",
+          "description": "MFCC 16"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc17" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc17",
+          "@type": "cr:Field",
+          "name": "mfcc17",
+          "description": "MFCC 17"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc18" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc18",
+          "@type": "cr:Field",
+          "name": "mfcc18",
+          "description": "MFCC 18"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc19" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc19",
+          "@type": "cr:Field",
+          "name": "mfcc19",
+          "description": "MFCC 19"
+        },
+        {
+          "dataType": ["sc:Float"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "mfcc20" }
+          },
+          "@id": "DATASET-balanced.csv/mfcc20",
+          "@type": "cr:Field",
+          "name": "mfcc20",
+          "description": "MFCC 20"
+        },
+        {
+          "dataType": ["sc:Text"],
+          "source": {
+            "fileObject": { "@id": "DATASET-balanced.csv_fileobject" },
+            "extract": { "column": "LABEL" }
+          },
+          "@id": "DATASET-balanced.csv/LABEL",
+          "@type": "cr:Field",
+          "name": "LABEL",
+          "description": "Ground truth label for classification"
+        }
+      ],
+      "@id": "DATASET-balanced.csv",
+      "@type": "cr:RecordSet",
+      "name": "DATASET-balanced.csv",
+      "description": "Balanced dataset for machine learning, features extracted from each 1 second of audio."
+    }
+  ],
+  "keywords": [
+    "task \u003E automatic-speech-recognition",
+    "task \u003E speech-synthesis",
+    "task \u003E audio-synthesis",
+    "task \u003E audio-classification",
+    "data type \u003E audio"
+  ],
+  "isAccessibleForFree": true,
+  "isLiveDataset": true,
+  "includedInDataCatalog": {
+    "@type": "sc:DataCatalog",
+    "name": "Kaggle",
+    "url": "https://www.kaggle.com"
+  },
+  "creator": {
+    "@type": "sc:Person",
+    "name": "Jordan J. Bird",
+    "url": "/birdy654",
+    "image": "https://storage.googleapis.com/kaggle-avatars/thumbnails/2039603-kg.jpg"
+  },
+  "publisher": {
+    "@type": "sc:Organization",
+    "name": "Kaggle",
+    "url": "https://www.kaggle.com/organizations/kaggle",
+    "image": "https://storage.googleapis.com/kaggle-organizations/4/thumbnail.png"
+  },
+  "thumbnailUrl": "https://storage.googleapis.com/kaggle-datasets-images/3579787/6231794/dd43e4f1b57358cd8f9f05d25e82a866/dataset-card.png?t=2023-08-24-12-40-51",
+  "dateModified": "2023-08-24T13:12:23.837",
+  "datePublished": "2023-08-24T14:03:10.3613953",
+  "@type": "sc:Dataset",
+  "name": "DEEP-VOICE: DeepFake Voice Recognition",
+  "url": "https://www.kaggle.com/datasets/birdy654/deep-voice-deepfake-voice-recognition",
+  "description": "# DEEP-VOICE: Real-time Detection of AI-Generated Speech for DeepFake Voice Conversion\n\nThis dataset contains examples of real human speech, and DeepFake versions of those speeches by using Retrieval-based Voice Conversion. \n\n*Can machine learning be used to detect when speech is AI-generated?*\n\n## Introduction\nThere are growing implications surrounding generative AI in the speech domain that enable voice cloning and real-time voice conversion from one individual to another. This technology poses a significant ethical threat and could lead to breaches of privacy and misrepresentation, thus there is an urgent need for real-time detection of AI-generated speech for DeepFake Voice Conversion. \n\nTo address the above emerging issues, we are introducing the DEEP-VOICE dataset. DEEP-VOICE is comprised of real human speech from eight well-known figures and their speech converted to one another using Retrieval-based Voice Conversion.\n\nFor each speech, the accompaniment (\u0022background noise\u0022) was removed before conversion using RVC. The original accompaniment is then added back to the DeepFake speech:\n\n\n![Overview of the Retrieval-based Voice Conversion process to generate DeepFake speech with Ryan Gosling\u0027s speech converted to Margot Robbie. Conversion is run on the extracted vocals before being layered on the original background ambience.](https://www.googleapis.com/download/storage/v1/b/kaggle-user-content/o/inbox%2F2039603%2F921dc2241837cd784329955d570f7802%2Fdfcover.png?generation=1692897655324630\u0026alt=media)\n\n(Above: Overview of the Retrieval-based Voice Conversion process to generate DeepFake speech with Ryan Gosling\u0027s speech converted to Margot Robbie. Conversion is run on the extracted vocals before being layered on the original background ambience.)\n\n\n\n\n## Dataset\nThere are two forms to the dataset that are made available. \n\nFirst, the raw audio can be found in the \u0022AUDIO\u0022 directory. They are arranged within \u0022REAL\u0022 and \u0022FAKE\u0022 class directories. The audio filenames note which speakers provided the real speech, and which voices they were converted to. For example \u0022Obama-to-Biden\u0022 denotes that Barack Obama\u0027s speech has been converted to Joe Biden\u0027s voice. \n\nSecond, the extracted features can be found in the \u0022DATASET-balanced.csv\u0022 file. This is the data that was used in the below study. The dataset has each feature extracted from one-second windows of audio and are balanced through random sampling.\n\n**Note: ** All experimental data is found within the \u0022KAGGLE\u0022 directory. The \u0022DEMONSTRATION\u0022 directory is used for playing cropped and compressed demos in notebooks due to Kaggle\u0027s limitations on file size.\n\nA potential use of a successful system could be used for the following: \n\n![Usage of the real-time system. The end user is notified when the machine learning model has processed the speech audio (e.g. a phone or conference call) and predicted that audio chunks contain AI-generated speech.](https://www.googleapis.com/download/storage/v1/b/kaggle-user-content/o/inbox%2F2039603%2F7ae536243464f0dbb48f3566765f6b50%2Fdfcover.png?generation=1692897790677119\u0026alt=media)\n\n(Above: Usage of the real-time system. The end user is notified when the machine learning model has processed the speech audio (e.g. a phone or conference call) and predicted that audio chunks contain AI-generated speech.)\n\n\n\n## Papers with Code\nThe dataset and all studies using it are linked using Papers with Code\n\nThe Papers with Code page can be found by clicking here: [Papers with Code](https://paperswithcode.com/paper/real-time-detection-of-ai-generated-speech)\n\n## Attribution\nThis dataset was produced from the study \u0022Real-time Detection of AI-Generated Speech for DeepFake Voice Conversion\u0022\n\nBird, J.J. and Lotfi, A., 2023. Real-time Detection of AI-Generated Speech for DeepFake Voice Conversion. arXiv preprint arXiv:2308.12734.\n\nThe preprint can be found on ArXiv by clicking here: [Real-time Detection of AI-Generated Speech for DeepFake Voice Conversion](https://arxiv.org/abs/2308.12734)\n\n## License\nThis dataset is provided under the MIT License:\n\n\n*Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \u0022Software\u0022), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:*\n\n*The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.*\n\n*THE SOFTWARE IS PROVIDED \u0022AS IS\u0022, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.*\n"
+}

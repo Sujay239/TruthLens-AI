@@ -1,0 +1,191 @@
+{
+  "@context": {
+    "@language": "en",
+    "@vocab": "https://schema.org/",
+    "citeAs": "cr:citeAs",
+    "column": "cr:column",
+    "conformsTo": "dct:conformsTo",
+    "cr": "http://mlcommons.org/croissant/",
+    "data": { "@id": "cr:data", "@type": "@json" },
+    "dataBiases": "cr:dataBiases",
+    "dataCollection": "cr:dataCollection",
+    "dataType": { "@id": "cr:dataType", "@type": "@vocab" },
+    "dct": "http://purl.org/dc/terms/",
+    "extract": "cr:extract",
+    "field": "cr:field",
+    "fileProperty": "cr:fileProperty",
+    "fileObject": "cr:fileObject",
+    "fileSet": "cr:fileSet",
+    "format": "cr:format",
+    "includes": "cr:includes",
+    "isEnumeration": "cr:isEnumeration",
+    "isLiveDataset": "cr:isLiveDataset",
+    "jsonPath": "cr:jsonPath",
+    "key": "cr:key",
+    "md5": "cr:md5",
+    "parentField": "cr:parentField",
+    "path": "cr:path",
+    "personalSensitiveInformation": "cr:personalSensitiveInformation",
+    "recordSet": "cr:recordSet",
+    "references": "cr:references",
+    "regex": "cr:regex",
+    "repeated": "cr:repeated",
+    "replace": "cr:replace",
+    "sc": "https://schema.org/",
+    "separator": "cr:separator",
+    "source": "cr:source",
+    "subField": "cr:subField",
+    "transform": "cr:transform",
+    "wd": "https://www.wikidata.org/wiki/"
+  },
+  "alternateName": " Dataset contains real videos of people with generated faces",
+  "conformsTo": "http://mlcommons.org/croissant/1.0",
+  "license": {
+    "@type": "sc:CreativeWork",
+    "name": "Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)",
+    "url": "https://creativecommons.org/licenses/by-nc-nd/4.0/"
+  },
+  "distribution": [
+    {
+      "contentUrl": "https://www.kaggle.com/api/v1/datasets/download/unidpro/deepfake-videos-dataset",
+      "contentSize": "64.593 MB",
+      "encodingFormat": "application/zip",
+      "@id": "archive.zip",
+      "@type": "cr:FileObject",
+      "name": "archive.zip",
+      "description": "Archive containing all the contents of the DeepFake Videos Dataset dataset"
+    },
+    {
+      "includes": "*.mp4",
+      "containedIn": { "@id": "archive.zip" },
+      "encodingFormat": "video/mp4",
+      "@id": "video-mp4_fileset",
+      "@type": "cr:FileSet",
+      "name": "video/mp4 files",
+      "description": "video/mp4 files contained in archive.zip"
+    },
+    {
+      "includes": "*.mov",
+      "containedIn": { "@id": "archive.zip" },
+      "encodingFormat": "video/quicktime",
+      "@id": "video-quicktime_fileset",
+      "@type": "cr:FileSet",
+      "name": "video/quicktime files",
+      "description": "video/quicktime files contained in archive.zip"
+    },
+    {
+      "includes": "*.(jpg|jpeg)",
+      "containedIn": { "@id": "archive.zip" },
+      "encodingFormat": "image/jpeg",
+      "@id": "image-jpeg_fileset",
+      "@type": "cr:FileSet",
+      "name": "image/jpeg files",
+      "description": "image/jpeg files contained in archive.zip"
+    },
+    {
+      "contentUrl": "DeepFake Videos Dataset.csv",
+      "containedIn": { "@id": "archive.zip" },
+      "encodingFormat": "text/csv",
+      "@id": "DeepFake\u002BVideos\u002BDataset.csv_fileobject",
+      "@type": "cr:FileObject",
+      "name": "DeepFake Videos Dataset.csv",
+      "description": "File for the data"
+    }
+  ],
+  "recordSet": [
+    {
+      "field": [
+        {
+          "dataType": ["sc:Text"],
+          "source": {
+            "fileObject": {
+              "@id": "DeepFake\u002BVideos\u002BDataset.csv_fileobject"
+            },
+            "extract": { "column": "id" }
+          },
+          "@id": "DeepFake\u002BVideos\u002BDataset.csv/id",
+          "@type": "cr:Field",
+          "name": "id",
+          "description": "id"
+        },
+        {
+          "dataType": ["sc:Text"],
+          "source": {
+            "fileObject": {
+              "@id": "DeepFake\u002BVideos\u002BDataset.csv_fileobject"
+            },
+            "extract": { "column": "deepfake" }
+          },
+          "@id": "DeepFake\u002BVideos\u002BDataset.csv/deepfake",
+          "@type": "cr:Field",
+          "name": "deepfake",
+          "description": "link to the deepfake video"
+        },
+        {
+          "dataType": ["sc:Text"],
+          "source": {
+            "fileObject": {
+              "@id": "DeepFake\u002BVideos\u002BDataset.csv_fileobject"
+            },
+            "extract": { "column": "image" }
+          },
+          "@id": "DeepFake\u002BVideos\u002BDataset.csv/image",
+          "@type": "cr:Field",
+          "name": "image",
+          "description": "link to the original image"
+        },
+        {
+          "dataType": ["sc:Text"],
+          "source": {
+            "fileObject": {
+              "@id": "DeepFake\u002BVideos\u002BDataset.csv_fileobject"
+            },
+            "extract": { "column": "video" }
+          },
+          "@id": "DeepFake\u002BVideos\u002BDataset.csv/video",
+          "@type": "cr:Field",
+          "name": "video",
+          "description": "link to the original video"
+        }
+      ],
+      "@id": "DeepFake\u002BVideos\u002BDataset.csv",
+      "@type": "cr:RecordSet",
+      "name": "DeepFake Videos Dataset.csv",
+      "description": "File for the data"
+    }
+  ],
+  "keywords": [
+    "data type \u003E video data",
+    "subject \u003E people and society",
+    "task \u003E video-generation",
+    "subject \u003E science and technology \u003E computer science",
+    "technique \u003E computer vision",
+    "subject \u003E earth and nature"
+  ],
+  "isAccessibleForFree": true,
+  "isLiveDataset": true,
+  "includedInDataCatalog": {
+    "@type": "sc:DataCatalog",
+    "name": "Kaggle",
+    "url": "https://www.kaggle.com"
+  },
+  "creator": {
+    "@type": "sc:Person",
+    "name": "Unidata",
+    "url": "/unidpro",
+    "image": "https://storage.googleapis.com/kaggle-avatars/thumbnails/27063537-kg.png?t=2025-05-26-09-43-43"
+  },
+  "publisher": {
+    "@type": "sc:Organization",
+    "name": "Kaggle",
+    "url": "https://www.kaggle.com/organizations/kaggle",
+    "image": "https://storage.googleapis.com/kaggle-organizations/4/thumbnail.png"
+  },
+  "thumbnailUrl": "https://storage.googleapis.com/kaggle-datasets-images/7669893/12178194/908249cc44d7ba64e988a61695f16dc6/dataset-card.png?t=2025-06-16-01-09-46",
+  "dateModified": "2025-06-16T00:58:16.803",
+  "datePublished": "2025-06-16T01:10:14.0764908",
+  "@type": "sc:Dataset",
+  "name": "DeepFake Videos Dataset",
+  "url": "https://www.kaggle.com/datasets/unidpro/deepfake-videos-dataset",
+  "description": "# DeepFake Videos for detection tasks\nDataset consists of **10,000\u002B** files featuring **7,000\u002B** people, providing a comprehensive resource for research in **deepfake detection** and **deepfake technology**. It includes real videos of individuals with **AI-generated faces** overlaid, specifically designed to enhance liveness detection systems.\n\nBy utilizing this dataset, researchers can advance their understanding of **deepfake generation** and improve the performance of **detection methods**. - **[Get the data](https://unidata.pro/datasets/deepfake-videos-dataset/?utm_source=kaggle-org\u0026utm_medium=referral\u0026utm_campaign=deepfake-videos-dataset)**\n\n## Metadata for the dataset\n![](https://www.googleapis.com/download/storage/v1/b/kaggle-user-content/o/inbox%2F22059654%2F7f47885f0afdca5c22f9f47e81307b95%2FFrame%201%20(8).png?generation=1742726304761567\u0026alt=media)\nDataset was created by generating fake faces and overlaying them onto authentic video clips sourced from platforms such as aisaver.io, faceswapvideo.ai, and magichour.ai.Videos featuring different individuals, backgrounds, and scenarios, making it suitable for various research applications.\n## \uD83D\uDCB5 Buy the Dataset: This is a limited preview of the data. To access the full dataset, please contact us at [https://unidata.pro](https://unidata.pro/datasets/deepfake-videos-dataset/?utm_source=kaggle-org\u0026utm_medium=referral\u0026utm_campaign=deepfake-videos-dataset) to discuss your requirements and pricing options.\n\nResearchers can leverage this dataset to enhance their understanding of deepfake detection and contribute to the development of more robust detection methods that can effectively combat the challenges posed by deepfake technology.\n## \uD83C\uDF10 [UniData](https://unidata.pro/datasets/deepfake-videos-dataset/?utm_source=kaggle-org\u0026utm_medium=referral\u0026utm_campaign=deepfake-videos-dataset) provides high-quality datasets, content moderation, data collection and annotation for your AI/ML projects \n"
+}
