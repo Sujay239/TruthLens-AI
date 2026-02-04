@@ -30,6 +30,8 @@ export default function AuthPage() {
     password: "",
   });
 
+  const [activeTab, setActiveTab] = useState("login");
+
   const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
@@ -157,18 +159,16 @@ export default function AuthPage() {
       });
 
       if (response.ok) {
-        toast.success("Account created successfully!", {
-          description: "Please check your email for a welcome message.",
+        toast.success("Registration successful!", {
+          description: "Please verify email to login.",
         });
-        // Optionally switch to login tab or auto-login
-        // For now, let's just clear the form or ask them to login
+        setActiveTab("login");
         setRegisterData({
           firstName: "",
           lastName: "",
           email: "",
           password: "",
         });
-        // You might want to switch the tab programmatically here
       } else {
         const errorData = await response.json();
         toast.error("Registration failed", { description: errorData.detail });
@@ -268,7 +268,11 @@ export default function AuthPage() {
             </p>
           </div>
 
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-2 mb-8 h-12 p-1 bg-muted/60">
               <TabsTrigger
                 value="login"

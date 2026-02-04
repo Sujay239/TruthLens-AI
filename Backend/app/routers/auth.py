@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from .. import models, schemas, utils, database, dependencies
 from app.email_utils import send_email
-from app.email_templates import get_password_reset_template
+from app.email_templates import get_password_reset_template, get_new_account_admin_notification_template
 import uuid
 from datetime import datetime
 from fastapi import BackgroundTasks, UploadFile, File
@@ -303,6 +303,7 @@ def change_password(
 def register(
     user: schemas.UserCreate, 
     background_tasks: BackgroundTasks,
+    request: Request,
     db: Session = Depends(database.get_db)
 ):
     # Normalize email to lowercase
@@ -347,6 +348,42 @@ def register(
         background_tasks.add_task(send_email, subject, [user.email], body)
     except Exception as e:
         print(f"Failed to send welcome email: {e}")
+
+    # Send Admin Notification
+    try:
+        user_agent = request.headers.get('user-agent', 'Unknown')
+        
+        # Simple parsing
+        platform = "Unknown"
+        if "Windows" in user_agent: platform = "Windows"
+        elif "Mac" in user_agent: platform = "MacOS"
+        elif "Linux" in user_agent: platform = "Linux"
+        elif "Android" in user_agent: platform = "Android"
+        elif "iPhone" in user_agent or "iPad" in user_agent: platform = "iOS"
+        
+        browser = "Unknown"
+        if "Edg" in user_agent: browser = "Edge"
+        elif "Chrome" in user_agent: browser = "Chrome" 
+        elif "Firefox" in user_agent: browser = "Firefox"
+        elif "Safari" in user_agent: browser = "Safari"
+        
+        # IST Time (UTC + 5:30)
+        ist_offset = timedelta(hours=5, minutes=30)
+        ist_now = datetime.utcnow() + ist_offset
+        
+        admin_subject = f"New Account: {user.username}"
+        user_info = {
+            "username": user.username,
+            "email": user.email,
+            "full_name": full_name or "N/A",
+            "platform": platform,
+            "browser": f"{browser} ({user_agent})",
+            "time": ist_now.strftime("%Y-%m-%d %H:%M:%S IST")
+        }
+        admin_body = get_new_account_admin_notification_template(user_info)
+        background_tasks.add_task(send_email, admin_subject, ["sujaykumarkotal8520@gmail.com"], admin_body)
+    except Exception as e:
+        print(f"Failed to send admin notification: {e}")
 
     return db_user
 
