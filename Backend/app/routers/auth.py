@@ -15,12 +15,13 @@ router = APIRouter(
     tags=["Authentication"]
 )
 
-# Google Auth Config
-GOOGLE_CLIENT_ID = "469032517353-n3pg2fh1gkupkbjoqfsr1anbcjqqt21b.apps.googleusercontent.com"
+# Google Auth Config (loaded from .env)
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 
-# GitHub Auth Config
-GITHUB_CLIENT_ID = "Ov23liDMQfI42XVPRzpE"
-GITHUB_CLIENT_SECRET = "3af19222fe03da3a0ad2eeb0a99dd8b272680320"
+# GitHub Auth Config (loaded from .env)
+GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID", "")
+GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
 
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests

@@ -30,7 +30,7 @@ export default function DeepfakeVoiceDetection() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [result, setResult] = useState<null | {
-    label: "Real" | "Fake";
+    label: "Real" | "Fake" | "Deepfake";
     confidence: number;
     analysis: string;
     details: {
@@ -306,7 +306,7 @@ export default function DeepfakeVoiceDetection() {
                     <h3 className="text-lg font-semibold">Scan Results</h3>
                     <Badge
                       className={`px-3 py-1 text-base ${
-                        result.label === "Fake"
+                        result.label === "Fake" || result.label === "Deepfake"
                           ? "bg-red-500 hover:bg-red-600"
                           : "bg-emerald-500 hover:bg-emerald-600"
                       }`}
@@ -325,12 +325,12 @@ export default function DeepfakeVoiceDetection() {
                     <Progress
                       value={result.confidence}
                       className={`h-2 ${
-                        result.label === "Fake"
+                        result.label === "Fake" || result.label === "Deepfake"
                           ? "bg-red-100 dark:bg-red-950"
                           : "bg-emerald-100 dark:bg-emerald-950"
                       }`}
                       indicatorClassName={
-                        result.label === "Fake"
+                        result.label === "Fake" || result.label === "Deepfake"
                           ? "bg-red-500"
                           : "bg-emerald-500"
                       }

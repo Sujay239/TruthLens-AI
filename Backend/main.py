@@ -85,12 +85,14 @@ app.include_router(dashboard.router)
 
 from app.ml.bert_classifier import get_model_and_tokenizer
 
-@app.on_event("startup")
-async def startup_event():
-    print("Pre-loading BERT model... Please wait.")
-    get_model_and_tokenizer()
-    print("BERT model loaded and ready!")
+# @app.on_event("startup")
+# async def startup_event():
+#     print("Pre-loading BERT model... Please wait.")
+#     get_model_and_tokenizer()
+#     print("BERT model loaded and ready!")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

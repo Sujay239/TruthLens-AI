@@ -17,3 +17,8 @@ pillow
 fastapi-mail
 google-auth
 requests
+librosa
+numpy
+joblib
+soundfile
+python-multipart
