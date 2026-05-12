@@ -68,6 +68,10 @@ class BaseAnalysisResult(BaseModel):
 # --- Fake News ---
 class FakeNewsRequest(BaseModel):
     text: str
+    verdict: Optional[str] = None
+    confidence: Optional[float] = None
+    summary: Optional[str] = None
+    analysis_details: Optional[dict] = None
 
 class FakeNewsResponse(BaseAnalysisResult):
     emotional_tone: str

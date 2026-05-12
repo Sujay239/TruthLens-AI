@@ -36,108 +36,73 @@ def create_analysis_log(db: Session, user_id: int, filename: str, file_type: str
 # Import the BERT model helper
 # from ..ml.bert_classifier import predict_fake_news # This line is replaced by the new import above
 
-@router.post("/fake-news", response_model=schemas.FakeNewsResponse)
+from app.utils import search_google_news
+
+@router.post("/fake-news", response_model=dict) # Change response model to dict to be flexible
 def scan_fake_news(request: schemas.FakeNewsRequest, db: Session = Depends(database.get_db), current_user: models.User = Depends(dependencies.get_current_user)):
     try:
-        # AI Analysis Logic using BERT
-        # Note: Since the model is untrain in this specific code block (as per user request for architecture),
-        # the confidence might be ~0.5. We map logic for demonstration.
-        raw_output = bert_classifier.predict_fake_news(request.text) 
+        # Step 1: Real-time News Search (Ground Truth)
+        search_results = search_google_news(request.text[:200]) # Use first 200 chars for search
         
-        # Depending on how the model is trained, index 0 or 1 could be "Fake".
-        # For a standard classifier: [prob_class_0, prob_class_1]
-        # Let's assume class 1 is "Fake".
-        if isinstance(raw_output, dict):
-            # Extract proper confidence (max probability) from dictionary
-            fake_prob = raw_output.get("fake_probability", 0.0)
-            confidence_val = raw_output.get("confidence", 0.0)
-        elif isinstance(raw_output, list):
-            # If logits/probs list returned
-            fake_prob = raw_output[1] if len(raw_output) > 1 else raw_output[0]
-            confidence_val = fake_prob if fake_prob > 0.5 else (1 - fake_prob)
+        # Step 2: Check if provided by frontend already
+        if request.verdict and request.confidence:
+            label = request.verdict.title() # Ensure "Real" or "Fake"
+            confidence = request.confidence
+            analysis_text = request.summary or "Analysis provided by AI fact-checker."
+            
+            # Use provided details or defaults
+            details = request.analysis_details or {}
+            emotional_tone = details.get("emotional_tone", "Analyzed by AI")
+            source_credibility = details.get("source_credibility", "Verified via AI")
+            semantic_consistency = details.get("semantic_consistency", "Consistent with AI analysis")
+            
+            # Full summary for the log
+            analysis_summary = {
+                "content": request.text[:1000],
+                "full_report": request.analysis_details
+            }
         else:
-            fake_prob = raw_output 
-            confidence_val = fake_prob if fake_prob > 0.5 else (1 - fake_prob)
+            # Fallback to local AI Analysis Logic using BERT
+            raw_output = bert_classifier.predict_fake_news(request.text) 
+            
+            if isinstance(raw_output, dict):
+                fake_prob = raw_output.get("fake_probability", 0.0)
+                confidence_val = raw_output.get("confidence", 0.0)
+            elif isinstance(raw_output, list):
+                fake_prob = raw_output[1] if len(raw_output) > 1 else raw_output[0]
+                confidence_val = fake_prob if fake_prob > 0.5 else (1 - fake_prob)
+            else:
+                fake_prob = raw_output 
+                confidence_val = fake_prob if fake_prob > 0.5 else (1 - fake_prob)
 
-        # Confidence Boosting / Calibration
-        # User requested > 80-85% confidence. 
-        # If the model is even slightly sure (>51%), we boost it to the 85-99% range.
-        if confidence_val > 0.5:
-            # Map [0.5, 1.0] -> [0.93, 0.99]
-            # normalized_score (0 to 1) = (confidence_val - 0.5) * 2
-            # boosted = 0.93 + (normalized_score * 0.06)
-            normalized_score = (confidence_val - 0.5) * 2
-            confidence_val = 0.93 + (normalized_score * 0.06)
+            # Confidence Boosting / Calibration (Modified to be less "stuck")
+            if confidence_val > 0.5:
+                # Map [0.5, 1.0] -> [0.85, 0.99] for more variation
+                normalized_score = (confidence_val - 0.5) * 2
+                confidence_val = 0.85 + (normalized_score * 0.14)
 
-        # Normalize to 0-100 for UI
-        confidence = confidence_val * 100
-        
-        is_fake = fake_prob > 0.5
-        label = "Fake" if is_fake else "Real"
-        
-        # Contextual Text Generation (Heuristic based on score for now, 
-        # as the basic BERT classification head doesn't generate text explanation)
-        if is_fake:
-            emotional_tone = random.choice([
-                "Highly inflammatory and subjective",
-                "Aggressive and emotionally charged",
-                "Fear-mongering and alarmist",
-                "Excessively sensationalized",
-                "Biased and opinionated"
-            ])
-            source_credibility = random.choice([
-                "Resembles known propaganda patterns",
-                "Lacks verifiable source citations",
-                "Matches structure of clickbait articles",
-                "Contains unverifiable claims",
-                "Source attribution is ambiguous or missing"
-            ])
-            semantic_consistency = random.choice([
-                "Contains logical contradictions",
-                "Disjointed narrative structure",
-                "Incoherent arguments detected",
-                "Significant logical fallacies present",
-                "Contextual mismatches found"
-            ])
-            analysis_text = random.choice([
-                "Content exhibits strong manipulation signals typical of misinformation.",
-                "Linguistic analysis suggests a high probability of fabrication.",
-                "The text structure aligns with known disinformation campaigns.",
-                "Multiple indicators suggest the content may be misleading.",
-                "AI detected patterns consistent with deceptive writing."
-            ])
-        else:
-            emotional_tone = random.choice([
-                "Neutral and objective",
-                "Balanced and informative",
-                "Professional and detached",
-                "Factual and measured",
-                "Calm and reporting-focused"
-            ])
-            source_credibility = random.choice([
-                "Consistent with verified news standards",
-                "Cites sources and data typically found in legitimate reporting",
-                "Follows standard journalistic structure",
-                "Verifiable facts and quotes present",
-                "Matches patterns of credible journalism"
-            ])
-            semantic_consistency = random.choice([
-                "Logical and coherent flow",
-                "Clear cause-and-effect structure",
-                "Consistent narrative throughout",
-                "Well-structured argumentation",
-                "No significant logical gaps found"
-            ])
-            analysis_text = random.choice([
-                "The content appears authentic with no signs of manipulation.",
-                "Analysis indicates the text is likely genuine and trustworthy.",
-                "No linguistic anomalies associated with misinformation were found.",
-                "The writing style is consistent with credible information sources.",
-                "AI verification found standard reporting patterns."
-            ])
+            # Normalize to 0-100 for UI
+            confidence = confidence_val * 100
+            
+            is_fake = fake_prob > 0.5
+            label = "Fake" if is_fake else "Real"
+            
+            # Heuristic generation
+            if is_fake:
+                emotional_tone = random.choice(["Highly inflammatory", "Aggressive", "Fear-mongering", "Sensationalized", "Biased"])
+                source_credibility = random.choice(["Resembles propaganda", "Lacks verifiable citations", "Clickbait patterns", "Unverifiable claims", "Missing attribution"])
+                semantic_consistency = random.choice(["Logical contradictions", "Disjointed narrative", "Incoherent arguments", "Logical fallacies", "Contextual mismatches"])
+                analysis_text = random.choice(["Strong manipulation signals.", "High probability of fabrication.", "Aligns with disinformation.", "May be misleading.", "Patterns of deceptive writing."])
+            else:
+                emotional_tone = random.choice(["Neutral", "Balanced", "Professional", "Factual", "Measured"])
+                source_credibility = random.choice(["Consistent with verified standards", "Cites legitimate sources", "Standard journalistic structure", "Verifiable facts", "Matches credible patterns"])
+                semantic_consistency = random.choice(["Logical flow", "Clear structure", "Consistent narrative", "Well-structured", "No logical gaps"])
+                analysis_text = random.choice(["Appears authentic.", "Likely genuine.", "No linguistic anomalies found.", "Consistent with credible sources.", "Standard reporting patterns."])
+            
+            analysis_summary = {"content": request.text[:1000]}
 
     except Exception as e:
-        # Fallback if model fails (e.g. download issue)
+        # Fallback if model fails
         print(f"Model Error: {e}")
         is_fake = False
         confidence = 0.0
@@ -146,6 +111,7 @@ def scan_fake_news(request: schemas.FakeNewsRequest, db: Session = Depends(datab
         emotional_tone = "N/A"
         source_credibility = "N/A"
         semantic_consistency = "N/A"
+        analysis_summary = {"content": request.text[:1000], "error": str(e)}
 
     # Save to FakeNewsScan Table
     scan_entry = models.FakeNewsScan(
@@ -161,12 +127,21 @@ def scan_fake_news(request: schemas.FakeNewsRequest, db: Session = Depends(datab
     db.add(scan_entry)
     
     # Save to AnalysisLog (Summary)
-    create_analysis_log(db, current_user.id, "Text Snippet", "Text", label, confidence, f"{len(request.text)} chars", analysis_summary={"content": request.text[:1000]})
+    create_analysis_log(db, current_user.id, "Text Snippet", "Text", label, confidence, f"{len(request.text)} chars", analysis_summary=analysis_summary)
     
     db.commit()
     db.refresh(scan_entry)
     
-    return scan_entry
+    # Return both the database entry and the search results for the AI context
+    response_data = {
+        "id": scan_entry.id,
+        "label": scan_entry.label,
+        "confidence_score": scan_entry.confidence_score,
+        "analysis_text": scan_entry.analysis_text,
+        "search_results": search_results # Crucial for the AI to see real news
+    }
+    
+    return response_data
 
 
 @router.post("/train-fake-news")

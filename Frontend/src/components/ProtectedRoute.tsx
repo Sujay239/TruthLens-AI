@@ -24,17 +24,21 @@ const ProtectedRoute = () => {
 
         if (response.ok) {
           setIsAuthenticated(true);
-        } else {
+        } else if (response.status === 401) {
+          // Token is explicitly invalid/expired — clear it
           localStorage.removeItem("token");
           setIsAuthenticated(false);
           toast.error("Session expired. Please login again.");
+        } else {
+          // Server error (500, etc.) — keep token, allow access
+          // The user shouldn't be logged out due to a temporary server issue
+          setIsAuthenticated(true);
         }
       } catch (error) {
         console.error("Auth validation error:", error);
-        // On network error, maybe allow slightly or fail safe?
-        // Creating a simplified approach: If we can't verify, we log them out for security.
-        localStorage.removeItem("token");
-        setIsAuthenticated(false);
+        // Network error (backend restarting/offline) — keep token, allow access
+        // JWT is self-contained, so the token is still valid even if we can't verify now
+        setIsAuthenticated(true);
       }
     };
 

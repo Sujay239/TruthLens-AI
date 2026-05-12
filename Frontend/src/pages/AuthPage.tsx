@@ -47,12 +47,17 @@ export default function AuthPage() {
           if (response.ok) {
             navigate("/dashboard");
             return;
-          } else {
+          } else if (response.status === 401) {
+            // Token explicitly invalid — remove it
             localStorage.removeItem("token");
           }
+          // For other errors (500, etc.), keep the token but show login page
         } catch (error) {
           console.error("Token verification failed:", error);
-          localStorage.removeItem("token");
+          // Network error — backend might be restarting
+          // Token might still be valid, try to go to dashboard anyway
+          navigate("/dashboard");
+          return;
         }
       }
       setIsCheckingAuth(false);
