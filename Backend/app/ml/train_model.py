@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 import os
 import logging
+import time
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -28,32 +29,41 @@ class FakeNewsDataset(Dataset):
         text = str(self.texts[idx])
         label = self.labels[idx]
 
-        encoding = self.tokenizer.encode_plus(
+        encoding = self.tokenizer(
             text,
-            add_special_tokens=True,
             max_length=self.max_len,
-            return_token_type_ids=False,
             padding="max_length",
             truncation=True,
             return_attention_mask=True,
-            return_tensors="pt"
+            return_tensors="pt",
         )
 
         return {
             "text": text,
-            "input_ids": encoding["input_ids"].flatten(),
-            "attention_mask": encoding["attention_mask"].flatten(),
+            "input_ids": encoding["input_ids"].squeeze(0),
+            "attention_mask": encoding["attention_mask"].squeeze(0),
             "labels": torch.tensor(label, dtype=torch.long)
         }
 
-def train_model(sample_size: int = None, epochs: int = 5):
+def train_model(
+    sample_size: int = None,
+    epochs: int = 5,
+    batch_size: int = 8,
+    max_len: int = 128,
+    log_every: int = 25,
+    freeze_bert: bool = False,
+):
     """
     Trains the BERT model on True.csv and Fake.csv.
     
     Args:
         sample_size (int, optional): Number of samples to use from each dataset. 
                                      Useful for quick testing. If None, uses all data.
-        epochs (int): Number of training epochs. Default is 20 (Max Level).
+        epochs (int): Number of training epochs.
+        batch_size (int): Number of samples per batch.
+        max_len (int): Maximum token length. 128 is much faster on CPU than 512.
+        log_every (int): Print progress every N batches.
+        freeze_bert (bool): Train only the classifier head for a much faster CPU run.
     """
     logger.info("Starting training process...")
 
@@ -66,6 +76,7 @@ def train_model(sample_size: int = None, epochs: int = 5):
 
     df_true = pd.read_csv(true_csv_path)
     df_fake = pd.read_csv(fake_csv_path)
+    logger.info(f"Loaded rows: True={len(df_true)} | Fake={len(df_fake)}")
 
     # 2. Add Labels (0 for True, 1 for Fake)
     df_true["label"] = 0
@@ -94,12 +105,20 @@ def train_model(sample_size: int = None, epochs: int = 5):
         texts, labels, test_size=0.1, random_state=42
     )
 
-    train_dataset = FakeNewsDataset(train_texts, train_labels, tokenizer)
-    val_dataset = FakeNewsDataset(val_texts, val_labels, tokenizer)
+    train_dataset = FakeNewsDataset(train_texts, train_labels, tokenizer, max_len=max_len)
+    val_dataset = FakeNewsDataset(val_texts, val_labels, tokenizer, max_len=max_len)
 
-    batch_size = 16 # Reduce if OOM
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size)
+    logger.info(
+        "Prepared data: train=%s | val=%s | batch_size=%s | max_len=%s | train_batches=%s | val_batches=%s",
+        len(train_dataset),
+        len(val_dataset),
+        batch_size,
+        max_len,
+        len(train_loader),
+        len(val_loader),
+    )
 
     # 7. Model Setup
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -108,6 +127,11 @@ def train_model(sample_size: int = None, epochs: int = 5):
     model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=2)
     model = model.to(device)
 
+    if freeze_bert:
+        for param in model.bert.parameters():
+            param.requires_grad = False
+        logger.info("BERT encoder frozen. Training classifier head only.")
+
     optimizer = AdamW(model.parameters(), lr=2e-5)
 
     # 8. Training Loop
@@ -115,7 +139,8 @@ def train_model(sample_size: int = None, epochs: int = 5):
     for epoch in range(epochs):
         logger.info(f"Epoch {epoch + 1}/{epochs}")
         total_loss = 0
-        for batch in train_loader:
+        epoch_start = time.time()
+        for batch_idx, batch in enumerate(train_loader, start=1):
             optimizer.zero_grad()
             
             input_ids = batch["input_ids"].to(device)
@@ -133,9 +158,25 @@ def train_model(sample_size: int = None, epochs: int = 5):
             
             loss.backward()
             optimizer.step()
+
+            if log_every and (batch_idx == 1 or batch_idx % log_every == 0 or batch_idx == len(train_loader)):
+                elapsed = time.time() - epoch_start
+                batches_per_sec = batch_idx / elapsed if elapsed else 0.0
+                remaining_batches = len(train_loader) - batch_idx
+                eta_seconds = remaining_batches / batches_per_sec if batches_per_sec else 0.0
+                logger.info(
+                    "Epoch %s/%s | Batch %s/%s | Loss %.4f | %.2f batch/s | ETA %.1f min",
+                    epoch + 1,
+                    epochs,
+                    batch_idx,
+                    len(train_loader),
+                    loss.item(),
+                    batches_per_sec,
+                    eta_seconds / 60,
+                )
         
         avg_train_loss = total_loss / len(train_loader)
-        logger.info(f"Average Training Loss: {avg_train_loss}")
+        logger.info(f"Average Training Loss: {avg_train_loss:.4f}")
 
     # 9. Validation (Optional but recommended to see if it works)
     model.eval()
@@ -143,7 +184,8 @@ def train_model(sample_size: int = None, epochs: int = 5):
     val_true = []
     
     with torch.no_grad():
-        for batch in val_loader:
+        val_start = time.time()
+        for batch_idx, batch in enumerate(val_loader, start=1):
             input_ids = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
             labels = batch["labels"].to(device)
@@ -153,6 +195,19 @@ def train_model(sample_size: int = None, epochs: int = 5):
             
             val_preds.extend(preds.cpu().numpy())
             val_true.extend(labels.cpu().numpy())
+
+            if log_every and (batch_idx == 1 or batch_idx % log_every == 0 or batch_idx == len(val_loader)):
+                elapsed = time.time() - val_start
+                batches_per_sec = batch_idx / elapsed if elapsed else 0.0
+                remaining_batches = len(val_loader) - batch_idx
+                eta_seconds = remaining_batches / batches_per_sec if batches_per_sec else 0.0
+                logger.info(
+                    "Validation | Batch %s/%s | %.2f batch/s | ETA %.1f min",
+                    batch_idx,
+                    len(val_loader),
+                    batches_per_sec,
+                    eta_seconds / 60,
+                )
 
     val_acc = accuracy_score(val_true, val_preds)
     logger.info(f"Validation Accuracy: {val_acc}")
@@ -183,7 +238,22 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train Fake News Model")
     parser.add_argument("--sample_size", type=int, default=None, help="Number of samples to use")
     parser.add_argument("--epochs", type=int, default=20, help="Number of epochs")
+    parser.add_argument("--batch_size", type=int, default=8, help="Batch size")
+    parser.add_argument("--max_len", type=int, default=128, help="Maximum token length")
+    parser.add_argument("--log_every", type=int, default=25, help="Log progress every N batches")
+    parser.add_argument(
+        "--freeze_bert",
+        action="store_true",
+        help="Freeze BERT and train only the classifier head. Much faster on CPU.",
+    )
     
     args = parser.parse_args()
     
-    train_model(sample_size=args.sample_size, epochs=args.epochs)
+    train_model(
+        sample_size=args.sample_size,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        max_len=args.max_len,
+        log_every=args.log_every,
+        freeze_bert=args.freeze_bert,
+    )

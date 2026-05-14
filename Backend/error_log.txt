@@ -1,0 +1,21 @@
+
+--- Video Scan Error at 2026-05-13 07:37:16.033323 ---
+400: Video Analysis Failed: Could not extract frames
+Traceback (most recent call last):
+  File "D:\Z_work\Sujay\TruthLens-AI\Backend\app\routers\scan.py", line 367, in scan_video
+    raise HTTPException(status_code=400, detail=f"Video Analysis Failed: {error_msg}")
+fastapi.exceptions.HTTPException: 400: Video Analysis Failed: Could not extract frames
+
+--- Video Scan Error at 2026-05-13 07:37:23.552797 ---
+400: Video Analysis Failed: Could not extract frames
+Traceback (most recent call last):
+  File "D:\Z_work\Sujay\TruthLens-AI\Backend\app\routers\scan.py", line 367, in scan_video
+    raise HTTPException(status_code=400, detail=f"Video Analysis Failed: {error_msg}")
+fastapi.exceptions.HTTPException: 400: Video Analysis Failed: Could not extract frames
+
+--- Video Scan Error at 2026-05-13 10:59:29.253368 ---
+400: Video Analysis Failed: Could not extract frames
+Traceback (most recent call last):
+  File "D:\Z_work\Sujay\TruthLens-AI\Backend\app\routers\scan.py", line 367, in scan_video
+    raise HTTPException(status_code=400, detail=f"Video Analysis Failed: {error_msg}")
+fastapi.exceptions.HTTPException: 400: Video Analysis Failed: Could not extract frames

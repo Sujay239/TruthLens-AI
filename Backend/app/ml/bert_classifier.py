@@ -53,18 +53,16 @@ class FakeNewsModel(ModelManager):
     def predict(self, text):
         self.load()
         try:
-            encoding = self.tokenizer.encode_plus(
+            encoding = self.tokenizer(
                 text,
-                add_special_tokens=True,
                 max_length=512,
-                return_token_type_ids=False,
-                padding='max_length',
+                padding="max_length",
                 truncation=True,
                 return_attention_mask=True,
-                return_tensors='pt',
+                return_tensors="pt",
             )
-            input_ids = encoding['input_ids'].to(self.device)
-            attention_mask = encoding['attention_mask'].to(self.device)
+            input_ids = encoding["input_ids"].to(self.device)
+            attention_mask = encoding["attention_mask"].to(self.device)
 
             with torch.no_grad():
                 outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
@@ -118,18 +116,16 @@ class AiTextModel(ModelManager):
             return {"label": "Error", "error": "Model failed to load"}
 
         try:
-            encoding = self.tokenizer.encode_plus(
+            encoding = self.tokenizer(
                 text,
-                add_special_tokens=True,
                 max_length=512,
-                return_token_type_ids=False, # RoBERTa doesn't use token_type_ids
-                padding='max_length',
+                padding="max_length",
                 truncation=True,
                 return_attention_mask=True,
-                return_tensors='pt',
+                return_tensors="pt",
             )
-            input_ids = encoding['input_ids'].to(self.device)
-            attention_mask = encoding['attention_mask'].to(self.device)
+            input_ids = encoding["input_ids"].to(self.device)
+            attention_mask = encoding["attention_mask"].to(self.device)
 
             with torch.no_grad():
                 outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)

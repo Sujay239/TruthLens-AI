@@ -87,17 +87,17 @@ def scan_fake_news(request: schemas.FakeNewsRequest, db: Session = Depends(datab
             is_fake = fake_prob > 0.5
             label = "Fake" if is_fake else "Real"
             
-            # Heuristic generation
+            score_text = f" Model score (fake probability): {float(fake_prob):.2f}."
             if is_fake:
-                emotional_tone = random.choice(["Highly inflammatory", "Aggressive", "Fear-mongering", "Sensationalized", "Biased"])
-                source_credibility = random.choice(["Resembles propaganda", "Lacks verifiable citations", "Clickbait patterns", "Unverifiable claims", "Missing attribution"])
-                semantic_consistency = random.choice(["Logical contradictions", "Disjointed narrative", "Incoherent arguments", "Logical fallacies", "Contextual mismatches"])
-                analysis_text = random.choice(["Strong manipulation signals.", "High probability of fabrication.", "Aligns with disinformation.", "May be misleading.", "Patterns of deceptive writing."])
+                emotional_tone = "High sensationalism" if fake_prob >= 0.75 else "Moderate sensationalism"
+                source_credibility = "Low credibility indicators" if fake_prob >= 0.75 else "Some credibility concerns"
+                semantic_consistency = "Inconsistencies detected" if fake_prob >= 0.75 else "Minor inconsistencies"
+                analysis_text = "Content appears likely to be misinformation based on linguistic patterns." + score_text
             else:
-                emotional_tone = random.choice(["Neutral", "Balanced", "Professional", "Factual", "Measured"])
-                source_credibility = random.choice(["Consistent with verified standards", "Cites legitimate sources", "Standard journalistic structure", "Verifiable facts", "Matches credible patterns"])
-                semantic_consistency = random.choice(["Logical flow", "Clear structure", "Consistent narrative", "Well-structured", "No logical gaps"])
-                analysis_text = random.choice(["Appears authentic.", "Likely genuine.", "No linguistic anomalies found.", "Consistent with credible sources.", "Standard reporting patterns."])
+                emotional_tone = "Neutral / factual tone" if fake_prob <= 0.25 else "Mostly neutral"
+                source_credibility = "No major credibility red flags" if fake_prob <= 0.25 else "Limited red flags"
+                semantic_consistency = "Consistent narrative structure" if fake_prob <= 0.25 else "Mostly consistent"
+                analysis_text = "Content appears likely to be authentic based on linguistic patterns." + score_text
             
             analysis_summary = {"content": request.text[:1000]}
 
@@ -254,24 +254,31 @@ async def scan_image(file: UploadFile = File(...), db: Session = Depends(databas
         result = predict_image(contents)
         
         label = result.get("label", "Error")
+        fake_prob = result.get("fake_probability")
         confidence = result.get("confidence", 0.0) * 100 # Convert to percentage
         is_fake = label == "Fake"
         
-        # generate context-aware analysis
-        if is_fake:
-            visual_artifacts = random.choice(["Warping artifacts found", "Blurry boundaries detected", "Inconsistent texture patterns"])
-            pixel_consistency = random.choice(["Inconsistent lighting", " mismatched noise levels", "Unnatural pixel transitions"])
-            metadata_analysis = "Stripped EXIF data" 
-            analysis_text = random.choice([
-                "Deepfake generation signatures detected.", 
-                "ResNet model flagged potential manipulation.", 
-                "High probability of synthetic media."
-            ])
+        score_text = ""
+        if isinstance(fake_prob, (int, float)):
+            score_text = f" Model score (fake probability): {float(fake_prob):.2f}."
+
+        if label == "Fake":
+            visual_artifacts = "Synthetic textures or boundary artifacts detected"
+            pixel_consistency = "Inconsistent lighting/noise patterns"
+            metadata_analysis = "Metadata may be missing or altered"
+            analysis_text = "Image shows indicators consistent with manipulation." + score_text
+        elif label == "Real":
+            visual_artifacts = "No strong manipulation artifacts detected"
+            pixel_consistency = "Consistent lighting/noise patterns"
+            metadata_analysis = "No major metadata anomalies detected"
+            analysis_text = "Image appears authentic based on the model." + score_text
+        elif label == "Inconclusive":
+            visual_artifacts = "Mixed signals"
+            pixel_consistency = "Partially consistent"
+            metadata_analysis = "Inconclusive"
+            analysis_text = "Result is inconclusive. Try a higher-resolution image or a less-compressed file." + score_text
         else:
-            visual_artifacts = "No significant artifacts"
-            pixel_consistency = "Natural lighting and noise"
-            metadata_analysis = "Valid camera signature"
-            analysis_text = "The image appears authentic."
+            raise HTTPException(status_code=400, detail=result.get("error", "Image Analysis Failed"))
 
         scan_entry = models.ImageScan(
             user_id=current_user.id,
@@ -291,6 +298,8 @@ async def scan_image(file: UploadFile = File(...), db: Session = Depends(databas
         db.commit()
         return scan_entry
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         print(f"Image Scan Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -317,11 +326,13 @@ async def scan_video(file: UploadFile = File(...), db: Session = Depends(databas
         temp_filename = f"temp_{random.randint(1000, 9999)}_{file.filename}"
         temp_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ml", temp_filename)
         
+        size_bytes = 0
         with open(temp_path, "wb") as buffer:
             while True:
                 chunk = await file.read(4096)
                 if not chunk:
                     break
+                size_bytes += len(chunk)
                 video_hash.update(chunk)
                 buffer.write(chunk)
         
@@ -329,30 +340,6 @@ async def scan_video(file: UploadFile = File(...), db: Session = Depends(databas
         
         # CHECK DB FOR EXISTING SCAN
         existing_scan = db.query(models.VideoScan).filter(models.VideoScan.video_hash == calculated_hash).first()
-        
-        if existing_scan:
-            print(f"Cache Hit! Video hash {calculated_hash} found in DB.")
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-                
-            # Even if cache hit, we return the NEW file_url if we want to point to the fresh upload?
-            # Or we point to the existing one? Ideally duplicate files should share storage, but simplicity first.
-            # We already saved a new copy. Let's use the new URL for this log so the link works.
-            
-            create_analysis_log(db, current_user.id, file.filename, "Video", existing_scan.label, existing_scan.confidence_score, "Cached", file_url)
-            db.commit()
-            
-            # Update the existing scan object response to use the new URL locally? No, return model has its own URL.
-            # We can just return the existing scan object. The user will see the old URL in the Dashboard unless we return a new object.
-            # But the user wants to see "Cached".
-            
-            # Important: If we return existing_scan, it has existing_scan.video_url.
-            # If that old file was deleted, it's broken.
-            # Since we just saved a fresh copy as `file_url`, maybe we should update the existing_scan entry to point to this new valid file?
-            # Or just return a response with the new URL.
-            
-            # Let's simple return existing scan for now.
-            return existing_scan
 
         # If not in DB, proceed with AI Prediction
         result = predict_video(temp_path)
@@ -366,37 +353,67 @@ async def scan_video(file: UploadFile = File(...), db: Session = Depends(databas
              error_msg = result.get("error", "Unknown error during video analysis")
              raise HTTPException(status_code=400, detail=f"Video Analysis Failed: {error_msg}")
 
+        fake_probability = result.get("fake_probability")
         confidence = result.get("confidence", 0.0) * 100
-        is_fake = label == "Deepfake" or label == "Fake"
+        score_text = ""
+        if isinstance(fake_probability, (int, float)):
+            score_text = f" Model score (fake probability): {float(fake_probability):.2f}."
 
-        if is_fake:
+        if label == "Deepfake":
             frame_consistency = "Jitter or artifacts detected across frames"
             audio_visual_sync = "Potential mismatch detected"
             blinking_patterns = "Irregular or absent blinking"
-            analysis_text = "Video contains strong indicators of deepfake manipulation."
-        else:
+            analysis_text = "Video contains indicators of deepfake manipulation." + score_text
+        elif label == "Real":
             frame_consistency = "Consistent and smooth"
             audio_visual_sync = "Synchronized"
             blinking_patterns = "Natural"
-            analysis_text = "Video appears authentic based on frame analysis."
+            analysis_text = "Video appears authentic based on frame analysis." + score_text
+        else:
+            frame_consistency = "Mixed signals across frames"
+            audio_visual_sync = "Unclear"
+            blinking_patterns = "Inconclusive"
+            analysis_text = "Result is inconclusive. The model score is close to the decision boundary; try a higher-resolution or longer clip." + score_text
             
-        scan_entry = models.VideoScan(
-            user_id=current_user.id,
-            video_url=file_url,
-            label=label,
-            confidence_score=confidence,
-            frame_consistency=frame_consistency,
-            audio_visual_sync=audio_visual_sync,
-            blinking_patterns=blinking_patterns,
-            analysis_text=analysis_text,
-            video_hash=calculated_hash 
-        )
-        db.add(scan_entry)
-        create_analysis_log(db, current_user.id, file.filename, "Video", label, confidence, "25.4 MB", scan_entry.video_url)
+        file_size_mb = f"{(size_bytes / (1024*1024)):.2f} MB"
+
+        if existing_scan:
+            existing_scan.video_url = file_url
+            existing_scan.label = label
+            existing_scan.confidence_score = confidence
+            existing_scan.frame_consistency = frame_consistency
+            existing_scan.audio_visual_sync = audio_visual_sync
+            existing_scan.blinking_patterns = blinking_patterns
+            existing_scan.analysis_text = analysis_text
+            existing_scan.created_at = datetime.datetime.utcnow()
+            scan_entry = existing_scan
+        else:
+            scan_entry = models.VideoScan(
+                user_id=current_user.id,
+                video_url=file_url,
+                label=label,
+                confidence_score=confidence,
+                frame_consistency=frame_consistency,
+                audio_visual_sync=audio_visual_sync,
+                blinking_patterns=blinking_patterns,
+                analysis_text=analysis_text,
+                video_hash=calculated_hash 
+            )
+            db.add(scan_entry)
+
+        create_analysis_log(db, current_user.id, file.filename, "Video", label, confidence, file_size_mb, scan_entry.video_url)
         db.commit()
         return scan_entry
         
+    except HTTPException as e:
+        raise e
     except Exception as e:
+        import traceback
+        with open("error_log.txt", "a") as f:
+            f.write(f"\n--- Video Scan Error at {datetime.datetime.utcnow()} ---\n")
+            f.write(str(e))
+            f.write("\n")
+            f.write(traceback.format_exc())
         print(f"Video Scan Error: {e}")
         if 'temp_path' in locals() and os.path.exists(temp_path):
             os.remove(temp_path)
@@ -467,6 +484,8 @@ async def scan_audio(file: UploadFile = File(...), db: Session = Depends(databas
         db.commit()
         return scan_entry
         
+    except HTTPException as e:
+        raise e
     except Exception as e:
         print(f"Audio Scan Error: {e}")
         if 'temp_path' in locals() and os.path.exists(temp_path):
@@ -563,6 +582,8 @@ async def scan_malware(
              analysis_text = f"Scan inconclusive: {result['error']}"
         else:
             label = result.get("label", "Clean")
+            if label == "Pending":
+                raise HTTPException(status_code=409, detail=result.get("analysis", "VirusTotal analysis is still processing."))
             score = result.get("score", 0)
             threat_level = result.get("threat_level", "None")
             signature_match = result.get("signature", "None")
@@ -587,6 +608,8 @@ async def scan_malware(
         db.commit()
         return scan_entry
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         print(f"Malware Scan Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

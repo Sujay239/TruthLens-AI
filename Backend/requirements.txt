@@ -22,3 +22,5 @@ numpy
 joblib
 soundfile
 python-multipart
+opencv-python-headless
+torchvision

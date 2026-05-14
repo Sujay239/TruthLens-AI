@@ -4,7 +4,6 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torchvision import models, transforms
-import torchvision.io as io
 from PIL import Image
 import os
 import logging
@@ -95,9 +94,29 @@ class DeepfakeVideoDetector:
 
     def extract_frames(self, video_path, output_dir, max_frames=20):
         """
-        Extracts frames from a video using torchvision.
+        Extracts frames from a video.
+
+        OpenCV is the primary backend because some torchvision builds do not
+        expose torchvision.io.read_video. Keeping this method as the public
+        entry point avoids noisy fallback errors in training and prediction.
+        """
+        count = self.extract_frames_cv2(video_path, output_dir, max_frames=max_frames)
+        if count > 0:
+            return count
+
+        return self.extract_frames_torchvision(video_path, output_dir, max_frames=max_frames)
+
+    def extract_frames_torchvision(self, video_path, output_dir, max_frames=20):
+        """
+        Optional torchvision frame extraction fallback.
         """
         try:
+            import torchvision.io as io
+
+            if not hasattr(io, "read_video"):
+                logger.debug("torchvision.io.read_video is unavailable in this torchvision build.")
+                return 0
+
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
 
@@ -125,7 +144,48 @@ class DeepfakeVideoDetector:
                 
             return count
         except Exception as e:
-            logger.error(f"Frame extraction failed for {video_path}: {e}")
+            logger.warning(f"Frame extraction (torchvision) failed for {video_path}: {e}")
+            return 0
+
+    def extract_frames_cv2(self, video_path, output_dir, max_frames=20):
+        try:
+            import cv2
+
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+
+            cap = cv2.VideoCapture(video_path)
+            if not cap.isOpened():
+                cap.release()
+                return 0
+
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+            if total_frames <= 0:
+                cap.release()
+                return 0
+
+            if total_frames <= max_frames:
+                indices = list(range(total_frames))
+            else:
+                step = total_frames / max_frames
+                indices = [int(i * step) for i in range(max_frames)]
+
+            count = 0
+            for idx in indices:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+                ok, frame = cap.read()
+                if not ok or frame is None:
+                    continue
+
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                img = Image.fromarray(frame_rgb)
+                img.save(os.path.join(output_dir, f"frame_{count}.jpg"))
+                count += 1
+
+            cap.release()
+            return count
+        except Exception as e:
+            logger.error(f"Frame extraction (cv2) failed for {video_path}: {e}")
             return 0
 
     def train_model(self, train_dir, epochs=5):
@@ -177,12 +237,20 @@ class DeepfakeVideoDetector:
             # OPTIMIZATION: Increased from 10 to 60 frames for better accuracy
             num_frames = self.extract_frames(video_path, temp_dir, max_frames=60)
             if num_frames == 0:
-                return {"label": "Error", "confidence": 0.0, "error": "Could not extract frames"}
+                num_frames = self.extract_frames_cv2(video_path, temp_dir, max_frames=60)
+            if num_frames == 0:
+                if os.path.exists(temp_dir):
+                    shutil.rmtree(temp_dir)
+                return {
+                    "label": "Error",
+                    "confidence": 0.0,
+                    "error": "Could not extract frames. Try an MP4 (H.264) file. If this persists, install opencv-python-headless or ensure ffmpeg/Video codecs are available on the server."
+                }
 
             fake_probs = []
             
             with torch.no_grad():
-                for img_name in os.listdir(temp_dir):
+                for img_name in sorted(os.listdir(temp_dir)):
                     img_path = os.path.join(temp_dir, img_name)
                     try:
                         image = Image.open(img_path).convert("RGB")
@@ -204,26 +272,33 @@ class DeepfakeVideoDetector:
 
             # AVG Probability
             avg_fake_prob = sum(fake_probs) / len(fake_probs)
+            fake_prob = avg_fake_prob
+            real_prob = 1 - avg_fake_prob
             
             # Majority Vote Logic (Optional, but avg prob is usually more robust for video)
             # count_fake = sum(1 for p in fake_probs if p > 0.5)
             # majority_fake = count_fake > (len(fake_probs) / 2)
 
-            if avg_fake_prob > 0.5:
-                # Boosting low-confidence fakes if many frames are suspicious could be done here
+            if fake_prob >= 0.65:
                 return {
                     "label": "Deepfake",
-                    "confidence": avg_fake_prob,
-                    "is_deepfake": True,
+                    "confidence": fake_prob,
+                    "fake_probability": fake_prob,
                     "frames_analyzed": num_frames
                 }
-            else:
+            if fake_prob <= 0.35:
                 return {
                     "label": "Real",
-                    "confidence": 1 - avg_fake_prob,
-                    "is_deepfake": False,
+                    "confidence": real_prob,
+                    "fake_probability": fake_prob,
                     "frames_analyzed": num_frames
                 }
+            return {
+                "label": "Inconclusive",
+                "confidence": max(fake_prob, real_prob),
+                "fake_probability": fake_prob,
+                "frames_analyzed": num_frames
+            }
 
         except Exception as e:
             logger.error(f"Prediction failed: {e}")

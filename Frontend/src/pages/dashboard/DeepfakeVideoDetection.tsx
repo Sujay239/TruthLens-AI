@@ -29,7 +29,7 @@ export default function DeepfakeVideoDetection() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [result, setResult] = useState<null | {
-    label: "Real" | "Fake" | "Deepfake";
+    label: "Real" | "Fake" | "Deepfake" | "Inconclusive";
     confidence: number;
     analysis: string;
     details: {
@@ -119,13 +119,34 @@ export default function DeepfakeVideoDetection() {
       );
 
       if (!response.ok) {
-        throw new Error("Analysis failed");
+        let message = `Analysis failed (${response.status})`;
+        try {
+          const errorData = (await response.json()) as unknown;
+          if (
+            typeof errorData === "object" &&
+            errorData !== null &&
+            "detail" in errorData
+          ) {
+            const detail = (errorData as { detail?: unknown }).detail;
+            if (typeof detail === "string") {
+              message = detail;
+            } else {
+              message = JSON.stringify(detail);
+            }
+          } else {
+            message = JSON.stringify(errorData);
+          }
+        } catch {
+          const text = await response.text();
+          if (text) message = text;
+        }
+        throw new Error(message);
       }
 
       const data = await response.json();
 
       setResult({
-        label: data.label as "Real" | "Fake",
+        label: data.label as "Real" | "Fake" | "Deepfake" | "Inconclusive",
         confidence: Math.round(data.confidence_score),
         analysis: data.analysis_text,
         details: {
@@ -137,7 +158,7 @@ export default function DeepfakeVideoDetection() {
       toast.success("Video scan complete");
     } catch (error) {
       console.error(error);
-      toast.error("Failed to analyze video.");
+      toast.error(error instanceof Error ? error.message : "Failed to analyze video.");
     } finally {
       setIsAnalyzing(false);
     }
@@ -252,6 +273,7 @@ export default function DeepfakeVideoDetection() {
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedVideo(null);
+                        setSelectedFile(null);
                         setResult(null);
                       }}
                     >
@@ -307,7 +329,9 @@ export default function DeepfakeVideoDetection() {
                       className={`px-3 py-1 text-base ${
                         result.label === "Fake" || result.label === "Deepfake"
                           ? "bg-red-500 hover:bg-red-600"
-                          : "bg-emerald-500 hover:bg-emerald-600"
+                          : result.label === "Inconclusive"
+                            ? "bg-yellow-500 hover:bg-yellow-600"
+                            : "bg-emerald-500 hover:bg-emerald-600"
                       }`}
                     >
                       {result.label}
@@ -326,12 +350,16 @@ export default function DeepfakeVideoDetection() {
                       className={`h-2 ${
                         result.label === "Fake" || result.label === "Deepfake"
                           ? "bg-red-100 dark:bg-red-950"
-                          : "bg-emerald-100 dark:bg-emerald-950"
+                          : result.label === "Inconclusive"
+                            ? "bg-yellow-100 dark:bg-yellow-950"
+                            : "bg-emerald-100 dark:bg-emerald-950"
                       }`}
                       indicatorClassName={
                         result.label === "Fake" || result.label === "Deepfake"
                           ? "bg-red-500"
-                          : "bg-emerald-500"
+                          : result.label === "Inconclusive"
+                            ? "bg-yellow-500"
+                            : "bg-emerald-500"
                       }
                     />
                   </div>
