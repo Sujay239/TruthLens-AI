@@ -91,7 +91,7 @@ const Hero = () => {
             className="min-w-48 h-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-cyan-500/20 hover:scale-105 hover:shadow-cyan-500/40 transition-all border-0"
             onClick={handleStartAnalysis}
           >
-            <img src="/favicon.ico" alt="Logo" className="h-8 w-8 mr-2" />
+            <Shield className="h-8 w-8 mr-2" />
             Start Analyzing
           </Button>
           <Button
