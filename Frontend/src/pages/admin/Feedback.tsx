@@ -10,7 +10,7 @@ import {
   Clock,
   ExternalLink,
   BrainCircuit,
-  BarChart3,
+
   TrendingUp,
   Eye,
 } from "lucide-react";

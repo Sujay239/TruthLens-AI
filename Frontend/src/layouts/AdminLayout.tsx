@@ -5,11 +5,10 @@ import {
   LayoutDashboard,
   ListChecks,
   Users,
-  BellRing,
   Activity,
   Settings,
   Shield,
-  Menu,
+  Headset,
   X,
   ChevronRight,
   LogOut,
@@ -32,6 +31,7 @@ const sidebarItems = [
   },
   { id: "users", label: "Users", icon: Users, path: "/admin/users" },
   { id: "admins", label: "Admins", icon: Shield, path: "/admin/admins" },
+  { id: "Support", label: "Support", icon: Headset, path: "/admin/support" },
   { id: "logs", label: "Audit Logs", icon: Activity, path: "/admin/logs" },
   {
     id: "settings",
@@ -52,12 +52,6 @@ export default function AdminLayout() {
   });
   const API_URL = import.meta.env.VITE_API_URL;
 
-  const headerLabel = useMemo(
-    () =>
-      sidebarItems.find((item) => item.id === activeSection)?.label ||
-      "Dashboard",
-    [activeSection],
-  );
 
   const initials = useMemo(() => {
     if (!adminData.full_name) return "A";
@@ -117,11 +111,7 @@ export default function AdminLayout() {
         >
           <div className="flex items-center gap-3 border-b border-border px-4 py-4 sm:px-6 sm:py-5">
             <div className="flex shrink-0 items-center justify-center">
-              <img
-                src="/favicon.ico"
-                alt="Logo"
-                className="h-10 w-10"
-              />
+              <img src="/favicon.ico" alt="Logo" className="h-10 w-10" />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -220,8 +210,6 @@ export default function AdminLayout() {
         </aside>
 
         <main className="flex min-w-0 flex-1 flex-col bg-muted/20">
-
-
           <div className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-5 md:p-8">
             <div className="mx-auto min-w-0 max-md:max-w-7xl">
               <Outlet />

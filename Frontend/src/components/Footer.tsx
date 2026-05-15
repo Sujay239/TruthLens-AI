@@ -1,4 +1,4 @@
-import { Shield, Github, Twitter, Linkedin, Mail } from "lucide-react";
+import {  Github, Twitter, Linkedin, Mail } from "lucide-react";
 
 export default function Footer() {
   return (

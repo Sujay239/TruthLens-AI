@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Shield, Star, User } from "lucide-react";
+import {  Star, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
 
