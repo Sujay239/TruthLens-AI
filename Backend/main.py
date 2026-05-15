@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app import models
-from app.database import engine
-from app.routers import auth, scan, history, email_test, dashboard
+from app.database import init_db
+from app.routers import auth, scan, history, email_test, dashboard, feedback
+from app.routers import admin_history, admin_feedback, admin_users, support
 
 # Create database tables
-models.Base.metadata.create_all(bind=engine)
+init_db()
 
 app = FastAPI(
     title="TruthLens AI Backend",
@@ -28,7 +28,7 @@ import os
 
 if not os.path.exists("uploads"):
     os.makedirs("uploads")
-    
+
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.mount("/static", StaticFiles(directory="uploads"), name="static")
 
@@ -47,15 +47,15 @@ async def validation_exception_handler(request, exc):
         logging.error(f"Body: {body.decode('utf-8', errors='ignore')}")
     except:
         pass
-    
+
     logging.error(f"Errors: {exc}")
-    
+
     # helper for file upload errors
     error_details = exc.errors()
     for error in error_details:
         if error.get("loc") == ("body", "file") and error.get("type") == "missing":
             logging.error("HINT: The 'file' field is missing. Ensure you are sending a MULTIPART/FORM-DATA request with a key named 'file'.")
-            
+
     return JSONResponse(
         status_code=422,
         content={"detail": error_details, "body": str(exc), "hint": "Check server logs for specific hints."},
@@ -82,6 +82,11 @@ app.include_router(scan.router)
 app.include_router(history.router)
 app.include_router(email_test.router)
 app.include_router(dashboard.router)
+app.include_router(feedback.router)
+app.include_router(admin_history.router)
+app.include_router(admin_feedback.router)
+app.include_router(admin_users.router)
+app.include_router(support.router)
 
 from app.ml.bert_classifier import get_model_and_tokenizer
 

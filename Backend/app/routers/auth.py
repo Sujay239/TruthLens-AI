@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from datetime import timedelta
 from .. import models, schemas, utils, database, dependencies
 from app.email_utils import send_email
@@ -35,6 +36,16 @@ class GoogleLoginRequest(schemas.BaseModel):
 class GithubLoginRequest(schemas.BaseModel):
     code: str
 
+
+class AdminLoginRequest(schemas.BaseModel):
+    identifier: str
+    password: str
+
+
+class AdminPinVerifyRequest(schemas.BaseModel):
+    admin_id: int
+    pin: str
+
 @router.post("/github-login", response_model=schemas.Token)
 def github_login(request: GithubLoginRequest, db: Session = Depends(database.get_db)):
     try:
@@ -46,14 +57,14 @@ def github_login(request: GithubLoginRequest, db: Session = Depends(database.get
             "client_secret": GITHUB_CLIENT_SECRET,
             "code": request.code
         }
-        
+
         response = requests.post(token_url, headers=headers, json=data)
         if response.status_code != 200:
              raise HTTPException(status_code=400, detail="Failed to retrieve access token from GitHub")
-             
+
         token_data = response.json()
         access_token = token_data.get("access_token")
-        
+
         if not access_token:
              error_desc = token_data.get("error_description", "Unknown error")
              raise HTTPException(status_code=400, detail=f"GitHub Error: {error_desc}")
@@ -62,12 +73,12 @@ def github_login(request: GithubLoginRequest, db: Session = Depends(database.get
         user_url = "https://api.github.com/user"
         auth_headers = {"Authorization": f"token {access_token}"}
         user_response = requests.get(user_url, headers=auth_headers)
-        
+
         if user_response.status_code != 200:
             raise HTTPException(status_code=400, detail="Failed to retrieve user info from GitHub")
-            
+
         user_info = user_response.json()
-        
+
         # 3. Handle Email (GitHub emails can be private)
         email = user_info.get("email")
         if not email:
@@ -87,7 +98,7 @@ def github_login(request: GithubLoginRequest, db: Session = Depends(database.get
                         if e.get("verified"):
                             email = e.get("email")
                             break
-                            
+
         if not email:
             raise HTTPException(status_code=400, detail="No verified email found for this GitHub account")
 
@@ -95,23 +106,23 @@ def github_login(request: GithubLoginRequest, db: Session = Depends(database.get
         username = user_info.get("login")
         avatar = user_info.get("avatar_url")
         name = user_info.get("name") or username
-        
+
         name_parts = name.split()
         first_name = name_parts[0] if name_parts else ""
         last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
 
         # Check in DB
         user = db.query(models.User).filter(models.User.email == email.lower()).first()
-        
+
         if not user:
             # Check for username collision and handle it
             if db.query(models.User).filter(models.User.username == username).first():
                 username = f"{username}{secrets.randbelow(1000)}"
-                
+
             alphabet = string.ascii_letters + string.digits
             password = ''.join(secrets.choice(alphabet) for i in range(16))
             hashed_password = utils.get_password_hash(password)
-            
+
             user = models.User(
                 email=email.lower(),
                 username=username,
@@ -125,7 +136,10 @@ def github_login(request: GithubLoginRequest, db: Session = Depends(database.get
             db.add(user)
             db.commit()
             db.refresh(user)
-            
+
+        if user.is_banned:
+            raise HTTPException(status_code=403, detail="Your account has been banned. Please contact support.")
+
         access_token_expires = timedelta(minutes=utils.ACCESS_TOKEN_EXPIRE_MINUTES)
         jwt_token = utils.create_access_token(
             data={"sub": user.username}, expires_delta=access_token_expires
@@ -147,12 +161,12 @@ def google_login(request: GoogleLoginRequest, db: Session = Depends(database.get
             'https://www.googleapis.com/oauth2/v3/userinfo',
             headers={'Authorization': f'Bearer {request.token}'}
         )
-        
+
         email = None
         picture = None
         first_name = ""
         last_name = ""
-        
+
         if response.status_code == 200:
             user_info = response.json()
             email = user_info.get('email')
@@ -163,8 +177,8 @@ def google_login(request: GoogleLoginRequest, db: Session = Depends(database.get
             # If fetching fails, try verifying it as an ID Token (fallback)
             try:
                 id_info = id_token.verify_oauth2_token(
-                    request.token, 
-                    google_requests.Request(), 
+                    request.token,
+                    google_requests.Request(),
                     GOOGLE_CLIENT_ID
                 )
                 email = id_info.get('email')
@@ -179,21 +193,21 @@ def google_login(request: GoogleLoginRequest, db: Session = Depends(database.get
 
         # Check if user exists
         user = db.query(models.User).filter(models.User.email == email.lower()).first()
-        
+
         if not user:
             # Register new user
             username = email.split('@')[0]
             # Ensure username is unique
             if db.query(models.User).filter(models.User.username == username).first():
                 username = f"{username}{secrets.randbelow(1000)}"
-            
+
             # Generate random password
             alphabet = string.ascii_letters + string.digits
             password = ''.join(secrets.choice(alphabet) for i in range(16))
             hashed_password = utils.get_password_hash(password)
-            
+
             full_name = f"{first_name} {last_name}".strip()
-            
+
             user = models.User(
                 email=email.lower(),
                 username=username,
@@ -207,7 +221,10 @@ def google_login(request: GoogleLoginRequest, db: Session = Depends(database.get
             db.add(user)
             db.commit()
             db.refresh(user)
-            
+
+        if user.is_banned:
+            raise HTTPException(status_code=403, detail="Your account has been banned. Please contact support.")
+
         # Create access token
         access_token_expires = timedelta(minutes=utils.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = utils.create_access_token(
@@ -240,19 +257,19 @@ def update_user_profile(
 ):
     if user_update.first_name is not None:
         current_user.first_name = user_update.first_name
-    
+
     if user_update.last_name is not None:
         current_user.last_name = user_update.last_name
-        
+
     # Maintain full_name for backward compatibility
     # Ensure none values are empty strings when constructing full name
     fn = current_user.first_name if current_user.first_name else ""
     ln = current_user.last_name if current_user.last_name else ""
     current_user.full_name = f"{fn} {ln}".strip()
-    
+
     if user_update.phone_number is not None:
         current_user.phone_number = user_update.phone_number
-        
+
     db.commit()
     db.refresh(current_user)
     return current_user
@@ -267,23 +284,23 @@ async def upload_avatar(
     UPLOAD_DIR = "uploads/avatars"
     if not os.path.exists(UPLOAD_DIR):
         os.makedirs(UPLOAD_DIR)
-        
+
     # Create valid filename
     file_ext = file.filename.split(".")[-1]
     filename = f"{current_user.id}_{int(datetime.utcnow().timestamp())}.{file_ext}"
     file_path = f"{UPLOAD_DIR}/{filename}"
-    
+
     # Save file
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-        
+
     # Update User DB
     # The URL will be /static/avatars/filename
     avatar_url = f"http://localhost:8000/uploads/avatars/{filename}"
     current_user.avatar = avatar_url
     db.commit()
     db.refresh(current_user)
-    
+
     return {"message": "Avatar uploaded successfully", "avatar_url": avatar_url}
 
 @router.put("/change-password")
@@ -294,22 +311,22 @@ def change_password(
 ):
     if not utils.verify_password(password_update.current_password, current_user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect current password")
-        
+
     current_user.hashed_password = utils.get_password_hash(password_update.new_password)
     db.commit()
-    
+
     return {"message": "Password updated successfully"}
 
 @router.post("/register", response_model=schemas.User)
 def register(
-    user: schemas.UserCreate, 
+    user: schemas.UserCreate,
     background_tasks: BackgroundTasks,
     request: Request,
     db: Session = Depends(database.get_db)
 ):
     # Normalize email to lowercase
     user.email = user.email.lower()
-    
+
     # DEBUG LOGGING
     print(f"DEBUG: Registering user: {user.username}")
     print(f"DEBUG: Received Data: {user.dict()}")
@@ -318,19 +335,19 @@ def register(
     db_user = db.query(models.User).filter(models.User.username == user.username).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
-    
+
     db_email = db.query(models.User).filter(models.User.email == user.email).first()
     if db_email:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     hashed_password = utils.get_password_hash(user.password)
-    
+
     # Create full name for fallback
     full_name = f"{user.first_name} {user.last_name}".strip() if user.first_name or user.last_name else None
-    
+
     db_user = models.User(
-        email=user.email, 
-        username=user.username, 
+        email=user.email,
+        username=user.username,
         hashed_password=hashed_password,
         first_name=user.first_name,
         last_name=user.last_name,
@@ -344,7 +361,7 @@ def register(
     from app.email_templates import get_welcome_email_template
     subject = "Welcome to TruthLens AI! 🛡️"
     body = get_welcome_email_template(user.username)
-    
+
     try:
         background_tasks.add_task(send_email, subject, [user.email], body)
     except Exception as e:
@@ -353,7 +370,7 @@ def register(
     # Send Admin Notification
     try:
         user_agent = request.headers.get('user-agent', 'Unknown')
-        
+
         # Simple parsing
         platform = "Unknown"
         if "Windows" in user_agent: platform = "Windows"
@@ -361,17 +378,17 @@ def register(
         elif "Linux" in user_agent: platform = "Linux"
         elif "Android" in user_agent: platform = "Android"
         elif "iPhone" in user_agent or "iPad" in user_agent: platform = "iOS"
-        
+
         browser = "Unknown"
         if "Edg" in user_agent: browser = "Edge"
-        elif "Chrome" in user_agent: browser = "Chrome" 
+        elif "Chrome" in user_agent: browser = "Chrome"
         elif "Firefox" in user_agent: browser = "Firefox"
         elif "Safari" in user_agent: browser = "Safari"
-        
+
         # IST Time (UTC + 5:30)
         ist_offset = timedelta(hours=5, minutes=30)
         ist_now = datetime.utcnow() + ist_offset
-        
+
         admin_subject = f"New Account: {user.username}"
         user_info = {
             "username": user.username,
@@ -395,19 +412,99 @@ def login(user_credentials: schemas.UserLogin, db: Session = Depends(database.ge
     if not user:
         # Check if they used email instead (normalize to lowercase)
         user = db.query(models.User).filter(models.User.email == user_credentials.username.lower()).first()
-    
+
     if not user or not utils.verify_password(user_credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
+    if user.is_banned:
+        raise HTTPException(status_code=403, detail="Your account has been banned. Please contact support.")
+
     access_token_expires = timedelta(minutes=utils.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = utils.create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post("/admin/login", response_model=schemas.AdminAuthChallengeResponse)
+def admin_login(
+    credentials: AdminLoginRequest,
+    db: Session = Depends(database.get_db),
+):
+    identifier = credentials.identifier.strip()
+    admin = (
+        db.query(models.Admin)
+        .filter(
+            or_(
+                models.Admin.username == identifier,
+                models.Admin.email == identifier.lower(),
+            )
+        )
+        .first()
+    )
+
+    if not admin or not utils.verify_password(credentials.password, admin.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect admin credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if not admin.pin:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Admin PIN is not configured",
+        )
+
+    return {
+        "requires_pin": True,
+        "admin_id": admin.id,
+        "message": "Admin credentials verified. Enter your 6-digit PIN to continue.",
+    }
+
+
+@router.post("/admin/verify-pin", response_model=schemas.AdminAuthSuccessResponse)
+def admin_verify_pin(
+    payload: AdminPinVerifyRequest,
+    db: Session = Depends(database.get_db),
+):
+    if len(payload.pin) != 6 or not payload.pin.isdigit():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="PIN must be exactly 6 digits",
+        )
+
+    admin = db.query(models.Admin).filter(models.Admin.id == payload.admin_id).first()
+    if not admin:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Admin account not found",
+        )
+
+    stored_pin = (admin.pin or "").strip()
+    if stored_pin != payload.pin.strip():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid PIN",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token_expires = timedelta(minutes=utils.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = utils.create_access_token(
+        data={"sub": admin.username, "role": "admin"}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.get("/admin/me", response_model=schemas.AdminData)
+def get_current_admin_data(
+    current_admin: models.Admin = Depends(dependencies.get_current_admin),
+):
+    return current_admin
 
 @router.post("/logout")
 def logout():
@@ -415,7 +512,7 @@ def logout():
 
 @router.post("/forgot-password")
 async def forgot_password(
-    request: schemas.ForgotPasswordRequest, 
+    request: schemas.ForgotPasswordRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(database.get_db)
 ):
@@ -434,28 +531,28 @@ async def forgot_password(
     reset_link = f"http://localhost:5173/auth/forgot-password?token={token}"
     subject = "Reset Your Password - TruthLens AI"
     body = get_password_reset_template(reset_link)
-    
+
     background_tasks.add_task(send_email, subject, [user.email], body)
-    
+
     return {"message": "If the email exists, a reset link has been sent."}
 
 @router.post("/reset-password")
 def reset_password(
-    request: schemas.ResetPasswordRequest, 
+    request: schemas.ResetPasswordRequest,
     db: Session = Depends(database.get_db)
 ):
     user = db.query(models.User).filter(models.User.reset_token == request.token).first()
-    
+
     if not user:
         raise HTTPException(status_code=400, detail="Invalid token")
-    
+
     if user.reset_token_expiry < datetime.utcnow():
         raise HTTPException(status_code=400, detail="Token has expired")
-    
+
     # Update Password
     user.hashed_password = utils.get_password_hash(request.new_password)
     user.reset_token = None
     user.reset_token_expiry = None
     db.commit()
-    
+
     return {"message": "Password updated successfully"}

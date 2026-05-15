@@ -16,6 +16,12 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
+def init_db():
+    # Import models here so all tables are registered before create_all runs.
+    from . import models  # noqa: F401
+
+    Base.metadata.create_all(bind=engine)
+
 def get_db():
     db = SessionLocal()
     try:

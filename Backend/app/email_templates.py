@@ -404,3 +404,212 @@ def get_new_account_admin_notification_template(user_info: dict) -> str:
     </body>
     </html>
     """
+
+def get_admin_support_notification_template(ticket_info: dict) -> str:
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>New Support Request</title>
+        <style>
+            body {{
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background-color: #f4f4f5;
+                margin: 0;
+                padding: 0;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 40px auto;
+                background-color: #ffffff;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            }}
+            .header {{
+                background-color: #0f172a;
+                padding: 30px;
+                text-align: center;
+                color: #ffffff;
+            }}
+            .content {{
+                padding: 40px;
+                color: #3f3f46;
+                line-height: 1.6;
+            }}
+            .h1 {{
+                color: #18181b;
+                font-size: 24px;
+                font-weight: 600;
+                margin-bottom: 20px;
+                margin-top: 0;
+            }}
+            .badge {{
+                display: inline-block;
+                padding: 4px 12px;
+                background-color: #2563eb;
+                color: white;
+                border-radius: 9999px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-bottom: 20px;
+            }}
+            .info-table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+            }}
+            .info-table td {{
+                padding: 12px;
+                border-bottom: 1px solid #e4e4e7;
+            }}
+            .info-table td:first-child {{
+                font-weight: 600;
+                width: 140px;
+                color: #52525b;
+            }}
+            .message-box {{
+                background-color: #f8fafc;
+                padding: 20px;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+                margin-top: 20px;
+                white-space: pre-wrap;
+            }}
+            .footer {{
+                background-color: #f4f4f5;
+                padding: 24px;
+                text-align: center;
+                color: #71717a;
+                font-size: 14px;
+                border-top: 1px solid #e4e4e7;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2 style="margin: 0;">Support Center</h2>
+            </div>
+            <div class="content">
+                <div class="badge">New Ticket</div>
+                <h1 class="h1">Support Request Received</h1>
+                <p>A new user support ticket has been submitted with the following details:</p>
+                
+                <table class="info-table">
+                    <tr>
+                        <td>Full Name</td>
+                        <td>{ticket_info.get('full_name', 'N/A')}</td>
+                    </tr>
+                    <tr>
+                        <td>Email</td>
+                        <td>{ticket_info.get('email', 'N/A')}</td>
+                    </tr>
+                    <tr>
+                        <td>Phone</td>
+                        <td>{ticket_info.get('phone_number', 'Not provided')}</td>
+                    </tr>
+                    <tr>
+                        <td>Reason</td>
+                        <td>{ticket_info.get('reason', 'N/A')}</td>
+                    </tr>
+                </table>
+                
+                <div style="margin-top: 30px; font-weight: 600; color: #18181b;">User Message:</div>
+                <div class="message-box">
+                    {ticket_info.get('message', '')}
+                </div>
+            </div>
+            <div class="footer">
+                <p>&copy; 2026 TruthLens AI. All rights reserved.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+def get_user_support_confirmation_template(ticket_info: dict) -> str:
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>We've Received Your Request</title>
+        <style>
+            body {{
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background-color: #f4f4f5;
+                margin: 0;
+                padding: 0;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 40px auto;
+                background-color: #ffffff;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            }}
+            .header {{
+                background-color: #18181b;
+                padding: 30px;
+                text-align: center;
+                color: #ffffff;
+            }}
+            .content {{
+                padding: 40px;
+                color: #3f3f46;
+                line-height: 1.6;
+            }}
+            .h1 {{
+                color: #18181b;
+                font-size: 24px;
+                font-weight: 600;
+                margin-bottom: 20px;
+                margin-top: 0;
+            }}
+            .message-copy {{
+                background-color: #f8fafc;
+                padding: 20px;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+                margin-top: 20px;
+                font-style: italic;
+            }}
+            .footer {{
+                background-color: #f4f4f5;
+                padding: 24px;
+                text-align: center;
+                color: #71717a;
+                font-size: 14px;
+                border-top: 1px solid #e4e4e7;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2 style="margin: 0;">TruthLens AI</h2>
+            </div>
+            <div class="content">
+                <h1 class="h1">Hello {ticket_info.get('full_name', 'there')},</h1>
+                <p>Thank you for reaching out to TruthLens AI Support.</p>
+                <p>We have received your request regarding <strong>{ticket_info.get('reason', 'Support')}</strong> and our team has been notified.</p>
+                <p>We will review your message and try to fix your issues as soon as possible. You can expect a response at this email address.</p>
+                
+                <div style="margin-top: 30px; font-weight: 600; color: #18181b;">A copy of your message:</div>
+                <div class="message-copy">
+                    "{ticket_info.get('message', '')}"
+                </div>
+            </div>
+            <div class="footer">
+                <p>&copy; 2026 TruthLens AI. All rights reserved.</p>
+                <p>Secure. Accurate. Truthful.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """

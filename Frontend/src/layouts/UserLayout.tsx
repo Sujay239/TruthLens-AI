@@ -39,21 +39,34 @@ export default function UserLayout() {
 
   const fetchUserData = async () => {
     try {
-      const response = await fetch(`${API_URL}/auth/myData`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+      const adminToken = localStorage.getItem("admin_token");
+      const token = localStorage.getItem("token");
+      const accessToken = token || adminToken;
+
+      if (!accessToken) {
+        return;
+      }
+
+      const response = await fetch(
+        `${API_URL}${adminToken ? "/auth/admin/me" : "/auth/myData"}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         },
-      });
+      );
+
       if (response.ok) {
         const data = await response.json();
         setUserData({
-          first_name: data.first_name || "User",
+          first_name:
+            data.first_name || data.full_name || data.username || "User",
           last_name: data.last_name || "",
           avatar: data.avatar || "",
         });
       }
-    } catch (error) {
-      console.error("Failed to fetch user data", error);
+    } catch {
+      // Keep the shell usable even if profile lookup fails temporarily.
     }
   };
 
@@ -119,14 +132,16 @@ export default function UserLayout() {
 
   const handleLogout = async () => {
     try {
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("admin_token");
       await fetch(`${API_URL}/auth/logout`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
-    } catch (error) {
-      console.error("Logout failed", error);
+    } catch {
+      // Ignore logout network errors.
     } finally {
       localStorage.clear();
       // Optional: Clear session storage if used

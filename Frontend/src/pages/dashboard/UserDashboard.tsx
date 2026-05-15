@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
@@ -64,11 +64,7 @@ export default function UserDashboard() {
   const API_URL = import.meta.env.VITE_API_URL;
   const COLORS = ["#10b981", "#ef4444"];
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/dashboard/overview`, {
         headers: {
@@ -86,7 +82,11 @@ export default function UserDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   if (loading) {
     return <LoadingSpinner />;

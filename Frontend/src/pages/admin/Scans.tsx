@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   FileText,
   Image as ImageIcon,
@@ -22,10 +23,10 @@ import {
 } from "@/components/ui/card";
 import { jsPDF } from "jspdf";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import ScanFeedback from "@/components/ScanFeedback";
 
-export default function AnalysisHistory() {
-  const [searchTerm, setSearchTerm] = useState("");
+export default function AdminScans() {
+  const [searchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const [typeFilter, setTypeFilter] = useState("All");
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
@@ -35,25 +36,40 @@ export default function AnalysisHistory() {
   const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    fetchHistory();
-  }, []);
+    fetchHistory(typeFilter);
+  }, [typeFilter]);
 
-  const fetchHistory = async () => {
+  // Handle deep-linking highlight
+  useEffect(() => {
+    const highlightId = searchParams.get("highlightId");
+    if (highlightId && historyData.length > 0) {
+      const itemToHighlight = historyData.find(item => item.id.toString() === highlightId);
+      if (itemToHighlight) {
+        setSelectedItem(itemToHighlight);
+      }
+    }
+  }, [historyData, searchParams]);
+
+  const fetchHistory = async (type?: string) => {
+    setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/history/`, {
+      let url = `${API_URL}/admin/history/`;
+      if (type && type !== "All") {
+        url += `?scan_type=${type}`;
+      }
+      const response = await fetch(url, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
         },
       });
       if (response.ok) {
         const data = await response.json();
-        // Map backend data to frontend structure
         const mappedData = data.map((item: any) => ({
           id: item.id,
           name: item.filename,
-          // Prefer the explicit scan_type for richer categories (e.g. fake_news -> News)
+          // If the backend provided a scan_type (e.g. 'fake_news'), surface it as 'News'
           type: item.scan_type === "fake_news" ? "News" : item.file_type,
-          date: new Date(item.date_created).toLocaleDateString(), // Simple formatting
+          date: new Date(item.date_created).toLocaleString(),
           result: item.result_label,
           confidence:
             (item.confidence_score > 1
@@ -64,13 +80,13 @@ export default function AnalysisHistory() {
           imageUrl: item.file_type === "Image" ? item.media_url : undefined,
           videoUrl: item.file_type === "Video" ? item.media_url : undefined,
           audioUrl: item.file_type === "Audio" ? item.media_url : undefined,
-          // store original for detailed reports if needed
+          user_name: item.user_name || item.user_email || "Unknown",
           original: item,
         }));
         setHistoryData(mappedData);
       }
     } catch (error) {
-      console.error("Failed to fetch history", error);
+      console.error("Failed to fetch admin history", error);
     } finally {
       setLoading(false);
     }
@@ -80,16 +96,15 @@ export default function AnalysisHistory() {
     const matchesSearch = item.name
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === "All" || item.type === typeFilter;
-    return matchesSearch && matchesType;
+    return matchesSearch;
   });
 
   const getIcon = (type: string) => {
     switch (type) {
-      case "Image":
-        return <ImageIcon className="h-4 w-4 text-blue-500" />;
       case "News":
         return <FileText className="h-4 w-4 text-blue-500" />;
+      case "Image":
+        return <ImageIcon className="h-4 w-4 text-blue-500" />;
       case "Video":
         return <Video className="h-4 w-4 text-purple-500" />;
       case "Audio":
@@ -132,15 +147,13 @@ export default function AnalysisHistory() {
     const pageWidth = doc.internal.pageSize.getWidth();
 
     // -- HEADER SECTION --
-    // Blue Background Header
-    doc.setFillColor(37, 99, 235); // Blue-600
+    doc.setFillColor(37, 99, 235);
     doc.rect(0, 0, pageWidth, 40, "F");
 
-    // Logo (Simulated with text/shape)
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(24);
     doc.setFont("helvetica", "bold");
-    doc.text("TruthLens AI", 20, 20); // Logo Text
+    doc.text("TruthLens AI", 20, 20);
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
@@ -151,33 +164,34 @@ export default function AnalysisHistory() {
       `Generated: ${new Date().toLocaleDateString()}`,
       pageWidth - 20,
       20,
-      { align: "right" },
+      {
+        align: "right",
+      },
     );
     doc.text(
       `Ref ID: #${item.id.toString().padStart(6, "0")}`,
       pageWidth - 20,
       30,
-      { align: "right" },
+      {
+        align: "right",
+      },
     );
 
-    // -- CONTENT SECTION --
     let yPos = 60;
 
-    // Title
-    doc.setTextColor(30, 41, 59); // Slate-800
+    doc.setTextColor(30, 41, 59);
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
     doc.text("Verification Analysis Result", 20, yPos);
 
     yPos += 15;
 
-    // Grid Layout for Key Stats
-    doc.setDrawColor(226, 232, 240); // Slate-200
-    doc.setFillColor(248, 250, 252); // Slate-50
+    doc.setDrawColor(226, 232, 240);
+    doc.setFillColor(248, 250, 252);
     doc.roundedRect(20, yPos, pageWidth - 40, 30, 3, 3, "FD");
 
     doc.setFontSize(10);
-    doc.setTextColor(100, 116, 139); // Slate-500
+    doc.setTextColor(100, 116, 139);
     doc.text("CLASSIFICATION", 40, yPos + 10);
     doc.text("CONFIDENCE SCORE", 110, yPos + 10);
     doc.text("CONTENT TYPE", 170, yPos + 10);
@@ -186,12 +200,9 @@ export default function AnalysisHistory() {
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
 
-    // Status Color Logic for PDF text
-    if (item.result === "Real")
-      doc.setTextColor(16, 185, 129); // Emerald
-    else if (item.result === "Fake")
-      doc.setTextColor(239, 68, 68); // Red
-    else doc.setTextColor(234, 179, 8); // Yellow
+    if (item.result === "Real") doc.setTextColor(16, 185, 129);
+    else if (item.result === "Fake") doc.setTextColor(239, 68, 68);
+    else doc.setTextColor(234, 179, 8);
 
     doc.text(item.result.toUpperCase(), 40, yPos);
 
@@ -201,8 +212,7 @@ export default function AnalysisHistory() {
 
     yPos += 30;
 
-    // -- FILE DETAILS --
-    doc.setDrawColor(37, 99, 235); // Blue accent line
+    doc.setDrawColor(37, 99, 235);
     doc.setLineWidth(1);
     doc.line(20, yPos, 20, yPos + 6);
     doc.setFontSize(14);
@@ -217,17 +227,17 @@ export default function AnalysisHistory() {
       [`Filename:`, item.name],
       [`Submission Date:`, item.date],
       [`File Size:`, item.size],
+      [`User:`, item.user_name || "Unknown"],
     ];
 
     details.forEach(([label, value]) => {
       doc.setFont("helvetica", "bold");
-      doc.text(label, 20, yPos);
+      doc.text(label as string, 20, yPos);
       doc.setFont("helvetica", "normal");
       doc.text(String(value), 60, yPos);
       yPos += 8;
     });
 
-    // -- IMAGE PREVIEW --
     if (item.type === "Image" && item.imageUrl) {
       yPos += 10;
       doc.setDrawColor(37, 99, 235);
@@ -239,7 +249,6 @@ export default function AnalysisHistory() {
       yPos += 15;
 
       try {
-        // Load image
         const img = new Image();
         img.crossOrigin = "Anonymous";
         img.src = item.imageUrl;
@@ -249,7 +258,6 @@ export default function AnalysisHistory() {
           img.onerror = reject;
         });
 
-        // Calculate aspect ratio to fit within bounds
         const maxWidth = pageWidth - 40;
         const maxHeight = 100;
         let imgWidth = img.width;
@@ -260,8 +268,6 @@ export default function AnalysisHistory() {
         imgHeight *= ratio;
 
         doc.addImage(img, "JPEG", 20, yPos, imgWidth, imgHeight);
-
-        // Draw border around image
         doc.setDrawColor(200, 200, 200);
         doc.rect(20, yPos, imgWidth, imgHeight);
 
@@ -275,7 +281,6 @@ export default function AnalysisHistory() {
       }
     }
 
-    // -- FOOTER --
     const footerY = doc.internal.pageSize.getHeight() - 20;
     doc.setDrawColor(200, 200, 200);
     doc.line(20, footerY, pageWidth - 20, footerY);
@@ -296,7 +301,6 @@ export default function AnalysisHistory() {
 
   return (
     <div className="space-y-8 relative">
-      {/* Details Modal */}
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-background rounded-lg shadow-xl w-full max-w-md border border-border p-6 relative max-h-[90vh] overflow-y-auto">
@@ -329,6 +333,22 @@ export default function AnalysisHistory() {
                     Your browser does not support the video tag.
                   </video>
                 </div>
+              ) : selectedItem.audioUrl ? (
+                <div className="mx-auto mb-4 p-4 rounded-lg border border-border bg-muted/20">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 text-yellow-600">
+                      <Mic className="h-6 w-6" />
+                    </div>
+                    <audio
+                      controls
+                      autoPlay
+                      className="w-full"
+                      src={selectedItem.audioUrl}
+                    >
+                      Your browser does not support the audio element.
+                    </audio>
+                  </div>
+                </div>
               ) : (
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
                   {getIcon(selectedItem.type)}
@@ -338,9 +358,11 @@ export default function AnalysisHistory() {
               <p className="text-sm text-muted-foreground">
                 {selectedItem.date} • {selectedItem.size}
               </p>
+              <p className="text-sm text-muted-foreground">
+                User: {selectedItem.user_name}
+              </p>
             </div>
 
-            {/* Display Text Content if available */}
             {selectedItem.original?.analysis_summary?.content && (
               <div className="mb-4 p-3 bg-muted/30 rounded-md border border-border max-h-40 overflow-y-auto">
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">
@@ -392,19 +414,15 @@ export default function AnalysisHistory() {
                 Close
               </Button>
 
-              <ScanFeedback
-                analysisLogId={selectedItem.id}
-                currentLabel={selectedItem.result}
-              />
             </div>
           </div>
         </div>
       )}
 
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Analysis History</h2>
+        <h2 className="text-3xl font-bold tracking-tight">All Scans</h2>
         <p className="text-muted-foreground">
-          Manage and review your past content verification results
+          Manage and review all users' content verification results
         </p>
       </div>
 
@@ -429,7 +447,6 @@ export default function AnalysisHistory() {
                 />
               </div>
 
-              {/* Filter Dropdown */}
               <div className="relative">
                 <select
                   className="h-10 w-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
@@ -486,7 +503,12 @@ export default function AnalysisHistory() {
                             <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center border border-border">
                               {getIcon(item.type)}
                             </div>
-                            <span>{item.name}</span>
+                            <div className="flex flex-col">
+                              <span>{item.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {item.user_name}
+                              </span>
+                            </div>
                           </div>
                         </td>
                         <td className="p-4 align-middle text-muted-foreground">

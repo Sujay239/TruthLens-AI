@@ -12,7 +12,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Shield, ArrowRight, CheckCircle2, Github } from "lucide-react";
+import {
+  Shield,
+  ArrowRight,
+  CheckCircle2,
+  Github,
+  UserCog,
+  LifeBuoy,
+} from "lucide-react";
+import { Link } from "react-router-dom";
 import authBg from "../assets/auth-bg.png";
 import { toast } from "sonner";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -52,8 +60,8 @@ export default function AuthPage() {
             localStorage.removeItem("token");
           }
           // For other errors (500, etc.), keep the token but show login page
-        } catch (error) {
-          console.error("Token verification failed:", error);
+        } catch {
+          console.error("Token verification failed");
           // Network error — backend might be restarting
           // Token might still be valid, try to go to dashboard anyway
           navigate("/dashboard");
@@ -63,7 +71,7 @@ export default function AuthPage() {
       setIsCheckingAuth(false);
     };
     verifyToken();
-  }, [navigate]);
+  }, [API_URL, navigate]);
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -86,7 +94,7 @@ export default function AuthPage() {
           const errorData = await response.json();
           toast.error("Google login failed", { description: errorData.detail });
         }
-      } catch (error) {
+      } catch {
         toast.error("Google login failed", {
           description: "Network error occurred.",
         });
@@ -135,7 +143,7 @@ export default function AuthPage() {
         const errorData = await response.json();
         toast.error("Login failed", { description: errorData.detail });
       }
-    } catch (error) {
+    } catch {
       toast.error("Login failed", { description: "Network error occurred." });
     } finally {
       setIsLoading(false);
@@ -178,7 +186,7 @@ export default function AuthPage() {
         const errorData = await response.json();
         toast.error("Registration failed", { description: errorData.detail });
       }
-    } catch (error) {
+    } catch {
       toast.error("Registration failed", {
         description: "Network error occurred.",
       });
@@ -249,6 +257,9 @@ export default function AuthPage() {
             <a href="/ethics" className="hover:text-white transition-colors">
               Ethics
             </a>
+            <Link to="/support" className="hover:text-white transition-colors font-semibold text-blue-400">
+              Contact Support
+            </Link>
           </div>
         </div>
       </div>
@@ -360,6 +371,15 @@ export default function AuthPage() {
                       )}
                     </Button>
                   </form>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mt-4 w-full h-11 border-blue-200/70 bg-blue-50/60 font-medium text-blue-700 hover:bg-blue-100/80 hover:text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200 dark:hover:bg-blue-900/40"
+                    onClick={() => navigate("/auth/admin")}
+                  >
+                    <UserCog className="mr-2 h-4 w-4" />
+                    Admin Login
+                  </Button>
                 </CardContent>
                 <CardFooter className="px-0 flex flex-col gap-5">
                   <div className="relative w-full">
@@ -584,6 +604,14 @@ export default function AuthPage() {
               </Card>
             </TabsContent>
           </Tabs>
+          <div className="mt-8 text-center">
+            <Link 
+              to="/support" 
+              className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors"
+            >
+              <LifeBuoy size={16} /> Need help? Contact Support
+            </Link>
+          </div>
         </div>
       </div>
     </div>

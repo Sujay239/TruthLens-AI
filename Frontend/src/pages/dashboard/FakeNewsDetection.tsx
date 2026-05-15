@@ -25,11 +25,13 @@ import {
 import { Textarea } from "../../components/ui/textarea";
 import { Progress } from "../../components/ui/progress";
 import { toast } from "sonner";
+import ScanFeedback from "@/components/ScanFeedback";
 
 // Declare puter as a global (loaded via CDN in index.html)
 declare const puter: any;
 
 interface FakeNewsResult {
+  analysisLogId?: number;
   verdict: "REAL" | "FAKE" | "LIKELY FAKE" | "LIKELY REAL" | "UNVERIFIABLE";
   confidence: number;
   summary: string;
@@ -57,6 +59,36 @@ const ANALYSIS_STEPS = [
   "Verifying factual claims against knowledge base...",
   "Generating comprehensive fact-check report...",
 ];
+
+const buildFallbackReport = (
+  responseText: string,
+  searchResults: any[],
+): FakeNewsResult => ({
+  verdict: "UNVERIFIABLE",
+  confidence: 35,
+  summary:
+    responseText ||
+    "The submitted text could not be verified as a coherent news claim.",
+  factCheckPoints: [
+    {
+      claim: "Submitted content",
+      status: "unverified",
+      explanation:
+        "The AI service did not return structured evidence for this input. This usually happens when the text is random, unclear, or not a verifiable news claim.",
+    },
+  ],
+  sourceAnalysis:
+    searchResults.length > 0
+      ? "Some search context was available, but the claim could not be matched to a clear verifiable report."
+      : "No reliable matching source context was found for this input.",
+  redFlags: [
+    "Input may not be a coherent news article or claim.",
+    "No structured fact-check report could be generated.",
+  ],
+  credibilityIndicators: [],
+  sourceLinks: searchResults.slice(0, 3),
+  fakeReasons: [],
+});
 
 export default function FakeNewsDetection() {
   const [text, setText] = useState("");
@@ -116,6 +148,7 @@ export default function FakeNewsDetection() {
 
       if (!backendResponse.ok) throw new Error("Search service unavailable.");
       const searchData = await backendResponse.json();
+      let analysisLogId = searchData.analysis_log_id;
       const searchResults = searchData.search_results || [];
       console.log("Real-time Search Results:", searchResults);
 
@@ -168,22 +201,27 @@ Output ONLY raw JSON:
       };
 
       const cleanedText = extractJson(responseText);
+      let parsed: FakeNewsResult;
       if (!cleanedText) {
         console.error("No JSON found in AI response:", responseText);
-        throw new Error("The AI failed to format the report correctly. Please try again.");
-      }
-
-      let parsed: FakeNewsResult;
-      try {
-        parsed = JSON.parse(cleanedText);
-      } catch (e) {
-        console.error("Parse Error:", e, cleanedText);
-        throw new Error("Invalid report format received from AI.");
+        parsed = buildFallbackReport(responseText, searchResults);
+      } else {
+        try {
+          parsed = JSON.parse(cleanedText);
+        } catch (e) {
+          console.error("Parse Error:", e, cleanedText);
+          parsed = buildFallbackReport(responseText, searchResults);
+        }
       }
 
       // Final normalization
-      parsed.verdict = (parsed.verdict === "REAL" || parsed.verdict === "FAKE") ? parsed.verdict : "FAKE";
-      parsed.confidence = Math.max(80, Math.min(99, parsed.confidence || 85));
+      parsed.verdict = ["REAL", "FAKE", "LIKELY FAKE", "LIKELY REAL", "UNVERIFIABLE"].includes(parsed.verdict)
+        ? parsed.verdict
+        : "UNVERIFIABLE";
+      parsed.confidence =
+        parsed.verdict === "UNVERIFIABLE"
+          ? Math.max(0, Math.min(60, parsed.confidence || 35))
+          : Math.max(80, Math.min(99, parsed.confidence || 85));
       parsed.summary = parsed.summary || "Verified via cross-referencing global news databases.";
       parsed.factCheckPoints = Array.isArray(parsed.factCheckPoints) ? parsed.factCheckPoints : [];
       parsed.fakeReasons = Array.isArray(parsed.fakeReasons) ? parsed.fakeReasons : [];
@@ -197,12 +235,12 @@ Output ONLY raw JSON:
         parsed.fakeReasons = ["No reputable reporting found for this claim.", "Contradicts verified data.", "Linguistic markers of misinformation."];
       }
 
-      setResult(parsed);
+      setResult({ ...parsed, analysisLogId });
       toast.success("Fact-check complete!");
 
       // Final log to update backend with the detailed AI report
       try {
-        await fetch(`${import.meta.env.VITE_API_URL}/scan/fake-news`, {
+        const detailedResponse = await fetch(`${import.meta.env.VITE_API_URL}/scan/fake-news`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -216,6 +254,13 @@ Output ONLY raw JSON:
             analysis_details: parsed 
           }),
         });
+        if (detailedResponse.ok) {
+          const detailedData = await detailedResponse.json();
+          analysisLogId = detailedData.analysis_log_id || analysisLogId;
+          setResult((current) =>
+            current ? { ...current, analysisLogId } : current,
+          );
+        }
       } catch (err) { console.error(err); }
 
     } catch (error: any) {
@@ -660,6 +705,11 @@ Examples:
                       Share
                     </Button>
                   </div>
+
+                  <ScanFeedback
+                    analysisLogId={result.analysisLogId}
+                    currentLabel={result.verdict}
+                  />
                   
                   {/* Verified Sources Section */}
                   {result?.sourceLinks && result.sourceLinks.length > 0 && (

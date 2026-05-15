@@ -20,8 +20,30 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         token_data = schemas.TokenData(username=username)
     except JWTError:
         raise credentials_exception
-        
+
     user = db.query(models.User).filter(models.User.username == token_data.username).first()
     if user is None:
         raise credentials_exception
     return user
+
+
+def get_current_admin(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate admin credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = jwt.decode(token, utils.SECRET_KEY, algorithms=[utils.ALGORITHM])
+        username: str = payload.get("sub")
+        role: str = payload.get("role")
+        if username is None or role != "admin":
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    admin = db.query(models.Admin).filter(models.Admin.username == username).first()
+    if admin is None:
+        raise credentials_exception
+    return admin

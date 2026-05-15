@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "../../components/ui/progress";
 import { toast } from "sonner";
+import ScanFeedback from "@/components/ScanFeedback";
 
 export default function DeepfakeImageDetection() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -30,6 +31,7 @@ export default function DeepfakeImageDetection() {
   const [result, setResult] = useState<null | {
     label: "Real" | "Fake" | "Deepfake" | "Inconclusive";
     confidence: number;
+    analysisLogId?: number;
     analysis: string;
     details: {
       visualArtifacts: string;
@@ -148,6 +150,7 @@ export default function DeepfakeImageDetection() {
       setResult({
         label: data.label as "Real" | "Fake" | "Deepfake" | "Inconclusive",
         confidence: Math.round(data.confidence_score),
+        analysisLogId: data.analysis_log_id,
         analysis: data.analysis_text,
         details: {
           visualArtifacts: data.visual_artifacts,
@@ -405,6 +408,11 @@ export default function DeepfakeImageDetection() {
                       Share Result
                     </Button>
                   </div>
+
+                  <ScanFeedback
+                    analysisLogId={result.analysisLogId}
+                    currentLabel={result.label}
+                  />
                 </div>
               )}
             </CardContent>
