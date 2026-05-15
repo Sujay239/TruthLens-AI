@@ -116,14 +116,12 @@ export default function AdminLayout() {
           }`}
         >
           <div className="flex items-center gap-3 border-b border-border px-4 py-4 sm:px-6 sm:py-5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
-              <div>
-                <img
-                  src="/favicon.png"
-                  alt="Logo"
-                  className="h-8 w-8 rounded-full"
-                />
-              </div>
+            <div className="flex shrink-0 items-center justify-center">
+              <img
+                src="/favicon.ico"
+                alt="Logo"
+                className="h-10 w-10"
+              />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

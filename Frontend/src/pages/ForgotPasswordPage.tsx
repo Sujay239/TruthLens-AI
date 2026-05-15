@@ -112,8 +112,8 @@ export default function ForgotPasswordPage() {
 
         {/* Logo */}
         <div className="relative z-10 flex items-center gap-2 text-lg font-bold">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600/90 backdrop-blur-sm shadow-lg shadow-blue-900/20">
-            <Shield className="h-5 w-5 text-white" />
+          <div className="flex items-center justify-center">
+            <img src="/favicon.ico" alt="Logo" className="h-8 w-8" />
           </div>
           <span className="text-xl tracking-tight">TruthLens AI</span>
         </div>
@@ -166,8 +166,8 @@ export default function ForgotPasswordPage() {
         <div className="w-full max-w-[400px] z-10">
           <div className="text-center lg:hidden mb-8">
             <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white">
-                <Shield className="h-6 w-6" />
+              <div className="flex items-center justify-center">
+                <img src="/favicon.ico" alt="Logo" className="h-10 w-10" />
               </div>
               <span className="text-xl font-bold">TruthLens AI</span>
             </div>

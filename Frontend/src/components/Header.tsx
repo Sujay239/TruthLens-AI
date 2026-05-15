@@ -11,13 +11,11 @@ export default function Header() {
         {/* Left Side: Logo & Branding */}
         <div className="flex items-center gap-3">
           {/* Logo Icon */}
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
-            <Shield className="h-6 w-6" />
-          </div>
+          <img src="/favicon.ico" alt="TruthLens AI Logo" className="h-8 w-8" />
 
           {/* Text Content */}
           <div className="flex flex-col">
-            <h1 className="text-lg font-bold leading-none text-blue-600">
+            <h1 className="text-lg font-bold leading-none">
               TruthLens AI
             </h1>
             <span className="text-xs font-medium text-muted-foreground mt-1">

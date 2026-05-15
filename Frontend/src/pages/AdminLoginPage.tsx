@@ -226,8 +226,8 @@ export default function AdminLoginPage() {
         <div className="relative z-10 w-full max-w-[440px]">
           <div className="mb-8 text-center lg:hidden">
             <div className="mb-4 flex items-center justify-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-600 text-white shadow-lg shadow-cyan-500/20">
-                <Shield className="h-6 w-6" />
+              <div className="flex items-center justify-center">
+                <img src="/favicon.ico" alt="Logo" className="h-10 w-10" />
               </div>
               <span className="text-xl font-bold">TruthLens AI</span>
             </div>

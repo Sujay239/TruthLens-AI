@@ -9,9 +9,7 @@ export default function Footer() {
           {/* Column 1: Branding */}
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
-                <Shield className="h-5 w-5" />
-              </div>
+              <img src="/favicon.ico" alt="TruthLens AI Logo" className="h-7 w-7" />
               <span className="text-xl font-bold text-blue-600">
                 TruthLens AI
               </span>
@@ -70,7 +68,7 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-600 transition-colors">
+                <a href="/support" className="hover:text-blue-600 transition-colors">
                   Support
                 </a>
               </li>

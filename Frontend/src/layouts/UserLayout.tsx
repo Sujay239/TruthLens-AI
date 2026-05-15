@@ -167,8 +167,8 @@ export default function UserLayout() {
         }`}
       >
         <div className="p-6 border-b border-border flex items-center gap-3 shrink-0">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
-            <Shield className="h-5 w-5" />
+          <div className="flex items-center justify-center">
+            <img src="/favicon.ico" alt="Logo" className="h-8 w-8" />
           </div>
           <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500">
             TruthLens
