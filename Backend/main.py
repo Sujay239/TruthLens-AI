@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
 from app.routers import auth, scan, history, email_test, dashboard, feedback
-from app.routers import admin_history, admin_feedback, admin_users, support
+from app.routers import admin_history, admin_feedback, admin_users, admin_management, support, admin_audit
 
 # Create database tables
 init_db()
@@ -86,7 +86,9 @@ app.include_router(feedback.router)
 app.include_router(admin_history.router)
 app.include_router(admin_feedback.router)
 app.include_router(admin_users.router)
+app.include_router(admin_management.router)
 app.include_router(support.router)
+app.include_router(admin_audit.router)
 
 from app.ml.bert_classifier import get_model_and_tokenizer
 

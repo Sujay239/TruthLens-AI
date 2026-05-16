@@ -613,3 +613,83 @@ def get_user_support_confirmation_template(ticket_info: dict) -> str:
     </body>
     </html>
     """
+
+def get_support_resolved_template(ticket_info: dict) -> str:
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Support Request Resolved</title>
+        <style>
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5; margin: 0; padding: 0; }}
+            .container {{ max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); }}
+            .header {{ background-color: #10b981; padding: 30px; text-align: center; color: #ffffff; }}
+            .content {{ padding: 40px; color: #3f3f46; line-height: 1.6; }}
+            .h1 {{ color: #18181b; font-size: 24px; font-weight: 600; margin-bottom: 20px; margin-top: 0; }}
+            .footer {{ background-color: #f4f4f5; padding: 24px; text-align: center; color: #71717a; font-size: 14px; border-top: 1px solid #e4e4e7; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2 style="margin: 0;">Support Resolved</h2>
+            </div>
+            <div class="content">
+                <h1 class="h1">Hello {ticket_info.get('full_name', 'there')},</h1>
+                <p>Good news! Your support request regarding <strong>{ticket_info.get('reason', 'Support')}</strong> has been marked as <strong>Solved</strong> by our team.</p>
+                <p>We hope the solution provided meets your needs. If you have any further questions or if the issue persists, please don't hesitate to open a new ticket or reply to this email.</p>
+                <p>Thank you for using TruthLens AI!</p>
+            </div>
+            <div class="footer">
+                <p>&copy; 2026 TruthLens AI. All rights reserved.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+def get_support_rejected_template(ticket_info: dict) -> str:
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Support Request Update</title>
+        <style>
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5; margin: 0; padding: 0; }}
+            .container {{ max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); }}
+            .header {{ background-color: #ef4444; padding: 30px; text-align: center; color: #ffffff; }}
+            .content {{ padding: 40px; color: #3f3f46; line-height: 1.6; }}
+            .h1 {{ color: #18181b; font-size: 24px; font-weight: 600; margin-bottom: 20px; margin-top: 0; }}
+            .reason-box {{ background-color: #fef2f2; padding: 20px; border-radius: 8px; border: 1px solid #fee2e2; margin-top: 20px; color: #b91c1c; }}
+            .footer {{ background-color: #f4f4f5; padding: 24px; text-align: center; color: #71717a; font-size: 14px; border-top: 1px solid #e4e4e7; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2 style="margin: 0;">Support Update</h2>
+            </div>
+            <div class="content">
+                <h1 class="h1">Hello {ticket_info.get('full_name', 'there')},</h1>
+                <p>We are writing to provide an update on your support request regarding <strong>{ticket_info.get('reason', 'Support')}</strong>.</p>
+                <p>Unfortunately, your request has been <strong>Rejected</strong> for the following reason:</p>
+                
+                <div class="reason-box">
+                    <strong>Reason for Rejection:</strong><br>
+                    {ticket_info.get('rejection_reason', 'No specific reason provided.')}
+                </div>
+                
+                <p style="margin-top: 20px;">If you believe this is a mistake or have additional information to provide, please feel free to submit a new request with more details.</p>
+                <p>Thank you for your understanding.</p>
+            </div>
+            <div class="footer">
+                <p>&copy; 2026 TruthLens AI. All rights reserved.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """

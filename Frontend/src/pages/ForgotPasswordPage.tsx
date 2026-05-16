@@ -12,7 +12,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Shield,
   ArrowRight,
   CheckCircle2,
   ArrowLeft,

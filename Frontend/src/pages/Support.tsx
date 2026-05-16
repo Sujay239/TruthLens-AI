@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/select";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 export default function SupportPage() {
   const navigate = useNavigate();

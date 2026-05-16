@@ -112,7 +112,8 @@ class SupportTicket(Base):
     phone_number = Column(String(50), nullable=True)
     reason = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
-    status = Column(String(50), default="Open") # Open, Closed, In Progress
+    status = Column(String(50), default="Pending") # Pending, Processing, Solved, Rejected
+    rejection_reason = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 # --- Specific Scan Tables ---
@@ -202,3 +203,19 @@ class MalwareScan(Base):
     analysis_text = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     user = relationship("User", back_populates="malware_scans")
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    actor_id = Column(Integer, nullable=True) # ID of the user/admin who performed the action
+    actor_type = Column(String(50)) # "user" or "admin"
+    actor_username = Column(String(255))
+    action = Column(String(255)) # "login", "logout", "password_change", etc.
+    target_id = Column(Integer, nullable=True) # ID of the object being acted upon (if any)
+    target_type = Column(String(50), nullable=True) # "user", "admin", "ticket", etc.
+    description = Column(Text) # Human-readable description
+    status = Column(String(50), default="success") # "success", "failure", "pending"
+    ip_address = Column(String(50), nullable=True)
+    user_agent = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -32,7 +32,7 @@ const sidebarItems = [
   { id: "users", label: "Users", icon: Users, path: "/admin/users" },
   { id: "admins", label: "Admins", icon: Shield, path: "/admin/admins" },
   { id: "Support", label: "Support", icon: Headset, path: "/admin/support" },
-  { id: "logs", label: "Audit Logs", icon: Activity, path: "/admin/logs" },
+  { id: "logs", label: "Audit Logs", icon: Activity, path: "/admin/audit" },
   {
     id: "settings",
     label: "Settings",
@@ -43,14 +43,25 @@ const sidebarItems = [
 
 export default function AdminLayout() {
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState("dashboard");
+  const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [adminData, setAdminData] = useState({
     full_name: "",
     username: "",
     email: "",
+    avatar: "",
   });
   const API_URL = import.meta.env.VITE_API_URL;
+
+  // Derive active section from URL instead of tracking manually
+  const activeSection = useMemo(() => {
+    const matched = sidebarItems.find((item) =>
+      item.path === "/admin"
+        ? location.pathname === "/admin" || location.pathname === "/admin/"
+        : location.pathname.startsWith(item.path)
+    );
+    return matched?.id ?? "dashboard";
+  }, [location.pathname]);
 
 
   const initials = useMemo(() => {
@@ -82,6 +93,7 @@ export default function AdminLayout() {
             full_name: data.full_name || data.username || "Administrator",
             username: data.username || "",
             email: data.email || "",
+            avatar: data.avatar || "",
           });
         }
       } catch (error) {
@@ -90,6 +102,14 @@ export default function AdminLayout() {
     };
 
     loadAdmin();
+
+    const handleProfileUpdate = () => {
+      loadAdmin();
+    };
+
+    window.addEventListener("adminProfileUpdated", handleProfileUpdate);
+    return () =>
+      window.removeEventListener("adminProfileUpdated", handleProfileUpdate);
   }, [API_URL]);
 
   return (
@@ -137,8 +157,9 @@ export default function AdminLayout() {
                 Signed in as
               </p>
               <p className="mt-1 truncate text-lg font-semibold text-foreground">
-                {adminData.full_name.split("(")[1]?.split(")")[0] ||
-                  "Administrator"}
+                {adminData.full_name.includes("(") 
+                  ? adminData.full_name.split("(")[1]?.split(")")[0]
+                  : adminData.full_name || "Administrator"}
               </p>
               <p className="truncate text-sm text-muted-foreground">
                 {adminData.email || adminData.username || "Admin access"}
@@ -155,7 +176,6 @@ export default function AdminLayout() {
                 <button
                   key={item.id}
                   onClick={() => {
-                    setActiveSection(item.id);
                     navigate(item.path);
                     setIsSidebarOpen(false);
                   }}
@@ -176,9 +196,16 @@ export default function AdminLayout() {
           </nav>
 
           <div className="border-t border-border p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="h-10 w-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
-                {initials}
+            <div 
+              className="flex items-center gap-3 mb-3 cursor-pointer hover:bg-muted/50 p-1 rounded-lg transition-colors"
+              onClick={() => navigate("/admin/settings")}
+            >
+              <div className="h-10 w-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold overflow-hidden border border-border">
+                {adminData.avatar ? (
+                  <img src={adminData.avatar} alt="Avatar" className="h-full w-full object-cover" />
+                ) : (
+                  initials
+                )}
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate text-foreground">
@@ -192,7 +219,10 @@ export default function AdminLayout() {
                 variant="ghost"
                 size="icon"
                 className="ml-auto"
-                onClick={() => navigate("/admin/profile")}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate("/admin/settings");
+                }}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>

@@ -6,6 +6,10 @@ import AdminAreaPage from "./pages/AdminAreaPage";
 import AdminScans from "./pages/admin/Scans";
 import AdminFeedback from "./pages/admin/Feedback";
 import AdminUsers from "./pages/admin/Users";
+import AdminAdmins from "./pages/admin/Admins";
+import AdminSupport from "./pages/admin/Support";
+import AdminSettings from "./pages/admin/Settings";
+import AdminAuditLogs from "./pages/admin/AuditLogs";
 import GithubCallback from "./pages/GithubCallback";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -62,6 +66,10 @@ function App() {
               <Route path="scans" element={<AdminScans />} />
               <Route path="feedback" element={<AdminFeedback />} />
               <Route path="users" element={<AdminUsers />} />
+              <Route path="admins" element={<AdminAdmins />} />
+              <Route path="support" element={<AdminSupport />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="audit" element={<AdminAuditLogs />} />
             </Route>
           </Route>
 

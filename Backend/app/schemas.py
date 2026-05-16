@@ -27,6 +27,10 @@ class AdminPinVerifyRequest(BaseModel):
     pin: str
 
 
+class AdminSelfPinVerify(BaseModel):
+    pin: str
+
+
 class AdminAuthChallengeResponse(BaseModel):
     requires_pin: bool
     admin_id: int
@@ -47,6 +51,43 @@ class AdminData(BaseModel):
 
     class Config:
         from_attributes = True
+
+class AdminCreate(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+    full_name: Optional[str] = None
+    pin: Optional[str] = None
+
+class AdminUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = None
+    password: Optional[str] = None
+    pin: Optional[str] = None
+
+class AdminFullResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    full_name: Optional[str] = None
+    avatar: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class AdminProfileUpdate(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+
+class AdminPasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+class AdminPinChange(BaseModel):
+    current_pin: str
+    new_pin: str
 
 class User(UserBase):
     id: int
@@ -316,3 +357,44 @@ class SupportTicketCreate(BaseModel):
     phone_number: Optional[str] = None
     reason: str
     message: str
+
+class SupportTicketResponse(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    phone_number: Optional[str] = None
+    reason: str
+    message: str
+    status: str
+    rejection_reason: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class SupportTicketStatusUpdate(BaseModel):
+    status: Literal["Pending", "Processing", "Solved", "Rejected"]
+    rejection_reason: Optional[str] = None
+
+# --- Audit Log Schemas ---
+class AuditLogBase(BaseModel):
+    action: str
+    actor_id: Optional[int] = None
+    actor_type: str # "user" or "admin"
+    actor_username: str
+    target_id: Optional[int] = None
+    target_type: Optional[str] = None
+    description: str
+    status: str = "success"
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+
+class AuditLogCreate(AuditLogBase):
+    pass
+
+class AuditLogResponse(AuditLogBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

@@ -8,7 +8,6 @@ import {
   Menu,
   X,
   User,
-  Shield,
   Bell,
   ChevronDown,
   ChevronRight,

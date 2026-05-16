@@ -32,12 +32,12 @@ declare const puter: any;
 
 interface FakeNewsResult {
   analysisLogId?: number;
-  verdict: "REAL" | "FAKE" | "LIKELY FAKE" | "LIKELY REAL" | "UNVERIFIABLE";
+  verdict: "REAL" | "FAKE" | "MISLEADING" | "UNVERIFIED" | "LIKELY FAKE" | "LIKELY REAL" | "UNVERIFIABLE";
   confidence: number;
   summary: string;
   factCheckPoints: {
     claim: string;
-    status: "verified" | "false" | "unverified" | "misleading";
+    status: "TRUE" | "FALSE" | "PARTLY_TRUE" | "UNVERIFIED" | "verified" | "false" | "unverified" | "misleading";
     explanation: string;
   }[];
   sourceAnalysis: string;
@@ -47,8 +47,12 @@ interface FakeNewsResult {
     title: string;
     url: string;
     publisher: string;
+    credibility?: string;
+    supportsClaim?: boolean;
+    reason?: string;
   }[];
   fakeReasons: string[];
+  finalNote?: string;
 }
 
 const ANALYSIS_STEPS = [
@@ -163,29 +167,149 @@ export default function FakeNewsDetection() {
         throw new Error("AI service unavailable. Please refresh.");
       }
 
-      const systemPrompt = `You are TruthLens — an elite AI fact-checker.
-${foundHighCred ? "IMPORTANT: REPUTABLE SOURCES FOUND. THIS NEWS IS REAL." : "ANALYZE THIS NEWS CAREFULLY."}
+      const prompt = `
+You are TruthLens — an elite AI fact-checking engine.
 
-## GROUND TRUTH CONTEXT:
+Your job is to verify whether the provided news claim is REAL, FAKE, MISLEADING, or UNVERIFIED using ONLY the provided search results and source evidence.
+
+You must be strict, evidence-based, and never assume something is true only because similar keywords appear in search results.
+
+━━━━━━━━━━━━━━━━━━━━
+INPUT DATA
+━━━━━━━━━━━━━━━━━━━━
+
+CLAIM / NEWS TO CHECK:
+${text}
+
+HIGH-CREDIBILITY SOURCE FOUND:
+${foundHighCred ? "YES" : "NO"}
+
+SEARCH RESULTS / GROUND TRUTH CONTEXT:
 ${JSON.stringify(searchResults, null, 2)}
 
-## MANDATORY JSON FORMAT:
-Output ONLY raw JSON:
+━━━━━━━━━━━━━━━━━━━━
+SOURCE QUALITY RULES
+━━━━━━━━━━━━━━━━━━━━
+
+Treat these as high-credibility sources:
+- Reuters
+- Associated Press / AP News
+- BBC
+- CNN
+- The Guardian
+- Al Jazeera
+- The Hindu
+- Indian Express
+- Hindustan Times
+- NDTV
+- ANI
+- PTI
+- Government websites
+- Police / court / official department websites
+- Company official statements
+- Verified institutional sources
+
+Treat these as weak or low-confidence sources:
+- Random blogs
+- Unknown websites
+- Social media posts
+- YouTube videos without credible reporting
+- AI-generated looking pages
+- Clickbait websites
+- Websites with no author, no date, or no citations
+
+━━━━━━━━━━━━━━━━━━━━
+FACT-CHECKING INSTRUCTIONS
+━━━━━━━━━━━━━━━━━━━━
+
+1. Identify the main factual claim.
+2. Compare the claim against the provided search results.
+3. Check whether reputable sources directly confirm the same event, person, date, location, and details.
+4. Do NOT mark news as REAL just because a reputable source appears. The source must clearly support the same claim.
+5. If sources confirm only part of the claim, mark it as MISLEADING.
+6. If no reliable source confirms the claim, mark it as UNVERIFIED.
+7. If reliable sources clearly contradict the claim, mark it as FAKE.
+8. If the claim is satire, old news presented as new, edited media, wrong location, wrong date, exaggerated, or missing context, mark it as MISLEADING or FAKE depending on severity.
+9. Never invent sources, dates, URLs, or quotes.
+10. Use only URLs present in the provided search results.
+11. Confidence must reflect evidence strength:
+   - 95–99: Confirmed by multiple reputable sources
+   - 85–94: Confirmed by one strong reputable source or several decent sources
+   - 65–84: Some evidence exists, but details are incomplete
+   - 40–64: Weak or mixed evidence
+   - 0–39: No reliable support or strong contradiction
+
+━━━━━━━━━━━━━━━━━━━━
+VERDICT RULES
+━━━━━━━━━━━━━━━━━━━━
+
+Use:
+- "REAL" when reputable sources directly confirm the claim.
+- "FAKE" when reliable sources disprove it or the claim is fabricated.
+- "MISLEADING" when some truth exists but the claim exaggerates, omits context, uses old news as new, or distorts details.
+- "UNVERIFIED" when there is not enough reliable evidence to confirm or deny.
+
+━━━━━━━━━━━━━━━━━━━━
+MANDATORY JSON OUTPUT
+━━━━━━━━━━━━━━━━━━━━
+
+Output ONLY raw valid JSON.
+Do NOT include markdown.
+Do NOT include explanations outside JSON.
+Do NOT wrap JSON in code blocks.
+Do NOT use trailing commas.
+
+Return exactly this structure:
+
 {
-  "verdict": "${foundHighCred ? "REAL" : "REAL/FAKE"}",
-  "confidence": ${foundHighCred ? "99" : "85-99"},
-  "summary": "...",
-  "factCheckPoints": [{"claim": "...", "status": "...", "explanation": "..."}],
-  "sourceAnalysis": "Verified via major news outlets.",
-  "redFlags": [],
-  "credibilityIndicators": ["Reported by multiple reputable sources"],
-  "sourceLinks": ${JSON.stringify(searchResults.slice(0, 3))},
-  "fakeReasons": []
-}`;
+  "verdict": "REAL | FAKE | MISLEADING | UNVERIFIED",
+  "confidence": 0,
+  "summary": "Clear 2-4 sentence explanation of the verdict.",
+  "factCheckPoints": [
+    {
+      "claim": "Specific claim being checked",
+      "status": "TRUE | FALSE | PARTLY_TRUE | UNVERIFIED",
+      "explanation": "Explain how the evidence supports, contradicts, or fails to verify this point."
+    }
+  ],
+  "sourceAnalysis": "Explain source quality, whether sources are reputable, and whether they directly support the claim.",
+  "redFlags": [
+    "List red flags such as no reputable coverage, mismatched dates, exaggerated wording, old news, suspicious source, missing author, etc."
+  ],
+  "credibilityIndicators": [
+    "List credibility signals such as reported by Reuters, government confirmation, multiple independent reports, official statement, etc."
+  ],
+  "sourceLinks": [
+    {
+      "title": "Source title",
+      "url": "Actual source URL from search results",
+      "publisher": "Publisher name",
+      "credibility": "HIGH | MEDIUM | LOW",
+      "supportsClaim": true,
+      "reason": "Brief reason why this source is relevant"
+    }
+  ],
+  "fakeReasons": [
+    "Only include reasons if verdict is FAKE, MISLEADING, or UNVERIFIED"
+  ],
+  "finalNote": "One-line human-friendly conclusion."
+}
+
+━━━━━━━━━━━━━━━━━━━━
+IMPORTANT
+━━━━━━━━━━━━━━━━━━━━
+
+If the news is REAL, include actual reputable source links from the provided search results in sourceLinks.
+
+If the news is FAKE, MISLEADING, or UNVERIFIED, explain exactly why and do not include unrelated source links as proof.
+
+Now analyze the claim and return only raw JSON.
+`;
+
 
       const aiResponse = await puter.ai.chat(
-        `Summarize and verify this news: "${text.substring(0, 500)}". ${foundHighCred ? "IT IS REAL. DO NOT MARK AS FAKE." : ""}`, 
-        { model: "gpt-4o", system: systemPrompt }
+        `Summarize and verify this news: "${text.substring(0, 500)}".`, 
+        { model: "gpt-4o", system: prompt }
       );
 
       // Robust JSON extraction and parsing
@@ -215,13 +339,13 @@ Output ONLY raw JSON:
       }
 
       // Final normalization
-      parsed.verdict = ["REAL", "FAKE", "LIKELY FAKE", "LIKELY REAL", "UNVERIFIABLE"].includes(parsed.verdict)
+      parsed.verdict = ["REAL", "FAKE", "MISLEADING", "UNVERIFIED", "LIKELY FAKE", "LIKELY REAL", "UNVERIFIABLE"].includes(parsed.verdict)
         ? parsed.verdict
-        : "UNVERIFIABLE";
-      parsed.confidence =
-        parsed.verdict === "UNVERIFIABLE"
+        : "UNVERIFIED";
+      
+      parsed.confidence = ["UNVERIFIED", "UNVERIFIABLE"].includes(parsed.verdict)
           ? Math.max(0, Math.min(60, parsed.confidence || 35))
-          : Math.max(80, Math.min(99, parsed.confidence || 85));
+          : Math.max(40, Math.min(99, parsed.confidence || 85));
       parsed.summary = parsed.summary || "Verified via cross-referencing global news databases.";
       parsed.factCheckPoints = Array.isArray(parsed.factCheckPoints) ? parsed.factCheckPoints : [];
       parsed.fakeReasons = Array.isArray(parsed.fakeReasons) ? parsed.fakeReasons : [];
@@ -297,6 +421,7 @@ ${result.factCheckPoints.map((p) => `• [${p.status.toUpperCase()}] ${p.claim}:
           progressBg: "bg-red-100 dark:bg-red-950",
           progressIndicator: "bg-red-500",
         };
+      case "MISLEADING":
       case "LIKELY FAKE":
         return {
           color: "bg-orange-500 hover:bg-orange-600",
@@ -327,7 +452,8 @@ ${result.factCheckPoints.map((p) => `• [${p.status.toUpperCase()}] ${p.claim}:
           progressBg: "bg-teal-100 dark:bg-teal-950",
           progressIndicator: "bg-teal-500",
         };
-      default:
+      case "UNVERIFIED":
+      case "UNVERIFIABLE":
         return {
           color: "bg-slate-500 hover:bg-slate-600",
           textColor: "text-slate-500",
@@ -342,24 +468,29 @@ ${result.factCheckPoints.map((p) => `• [${p.status.toUpperCase()}] ${p.claim}:
 
   const getClaimStatusBadge = (status: string) => {
     switch (status) {
+      case "TRUE":
       case "verified":
         return (
           <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-xs">
             ✓ Verified
           </Badge>
         );
+      case "FALSE":
       case "false":
         return (
           <Badge className="bg-red-500/15 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 text-xs">
             ✗ False
           </Badge>
         );
+      case "PARTLY_TRUE":
       case "misleading":
         return (
           <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 text-xs">
             ⚠ Misleading
           </Badge>
         );
+      case "UNVERIFIED":
+      case "unverified":
       default:
         return (
           <Badge className="bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 text-xs">
@@ -544,14 +675,22 @@ Examples:
                     </div>
                   </div>
 
-                  {/* Summary */}
-                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
-                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                      <FileText className="h-4 w-4" /> Summary
-                    </h4>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {result.summary}
-                    </p>
+                  {/* Summary & Final Note */}
+                  <div className="space-y-4">
+                    <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                      <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                        <FileText className="h-4 w-4" /> Summary
+                      </h4>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {result.summary}
+                      </p>
+                    </div>
+                    
+                    {result.finalNote && (
+                      <div className="bg-blue-50/30 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-100/50 dark:border-blue-900/30 italic text-sm text-center text-blue-700 dark:text-blue-300">
+                        "{result.finalNote}"
+                      </div>
+                    )}
                   </div>
 
                   {/* Claim-by-Claim Analysis */}
@@ -581,11 +720,11 @@ Examples:
                     </div>
                   )}
 
-                  {/* Source Links — shown when news is REAL */}
-                  {result.verdict === "REAL" && result.sourceLinks && result.sourceLinks.length > 0 && (
+                  {/* Source Links — shown when news is REAL or has sources */}
+                  {result.sourceLinks && result.sourceLinks.length > 0 && (
                     <div className="p-4 bg-blue-50/50 dark:bg-blue-950/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
                       <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-blue-700 dark:text-blue-400">
-                        <Globe className="h-4 w-4" /> Verified Source Links
+                        <Globe className="h-4 w-4" /> {result.verdict === "REAL" ? "Verified Source Links" : "Related Sources & Evidence"}
                       </h4>
                       <div className="space-y-2">
                         {result.sourceLinks.map((source, i) => (
@@ -600,11 +739,18 @@ Examples:
                               <ExternalLink className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-blue-700 dark:text-blue-300 group-hover:underline truncate">
-                                {source.title}
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium text-blue-700 dark:text-blue-300 group-hover:underline truncate">
+                                  {source.title}
+                                </p>
+                                {source.credibility && (
+                                  <Badge variant="outline" className="text-[10px] h-4 px-1 py-0 border-blue-200 text-blue-600">
+                                    {source.credibility}
+                                  </Badge>
+                                )}
+                              </div>
                               <p className="text-xs text-muted-foreground">
-                                {source.publisher} • {source.url}
+                                {source.publisher} • {source.reason || source.url}
                               </p>
                             </div>
                             <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-blue-500 flex-shrink-0" />
@@ -614,11 +760,11 @@ Examples:
                     </div>
                   )}
 
-                  {/* Fake Reasons — shown when news is FAKE */}
-                  {result.verdict === "FAKE" && result.fakeReasons && result.fakeReasons.length > 0 && (
+                  {/* Fake Reasons — shown when news is FAKE, MISLEADING, or UNVERIFIED */}
+                  {["FAKE", "MISLEADING", "UNVERIFIED"].includes(result.verdict) && result.fakeReasons && result.fakeReasons.length > 0 && (
                     <div className="p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-200 dark:border-red-900/40">
                       <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-red-700 dark:text-red-400">
-                        <XCircle className="h-4 w-4" /> Why This News Is Fake
+                        <XCircle className="h-4 w-4" /> Why This News Is Flagged
                       </h4>
                       <div className="space-y-2">
                         {result.fakeReasons.map((reason, i) => (

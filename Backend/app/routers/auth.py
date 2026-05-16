@@ -5,11 +5,13 @@ from datetime import timedelta
 from .. import models, schemas, utils, database, dependencies
 from app.email_utils import send_email
 from app.email_templates import get_password_reset_template, get_new_account_admin_notification_template
+from app.utils.audit_utils import record_audit_log
 import uuid
 from datetime import datetime
 from fastapi import BackgroundTasks, UploadFile, File
 import shutil
 import os
+from typing import Optional
 
 router = APIRouter(
     prefix="/auth",
@@ -47,7 +49,7 @@ class AdminPinVerifyRequest(schemas.BaseModel):
     pin: str
 
 @router.post("/github-login", response_model=schemas.Token)
-def github_login(request: GithubLoginRequest, db: Session = Depends(database.get_db)):
+def github_login(req: Request, request: GithubLoginRequest, db: Session = Depends(database.get_db)):
     try:
         # 1. Exchange code for access token
         token_url = "https://github.com/login/oauth/access_token"
@@ -79,20 +81,17 @@ def github_login(request: GithubLoginRequest, db: Session = Depends(database.get
 
         user_info = user_response.json()
 
-        # 3. Handle Email (GitHub emails can be private)
+        # 3. Handle Email
         email = user_info.get("email")
         if not email:
-            # Fetch emails manually
             emails_url = "https://api.github.com/user/emails"
             emails_response = requests.get(emails_url, headers=auth_headers)
             if emails_response.status_code == 200:
                 emails = emails_response.json()
-                # Find primary verified email
                 for e in emails:
                     if e.get("primary") and e.get("verified"):
                         email = e.get("email")
                         break
-                # Fallback to any verified email
                 if not email:
                      for e in emails:
                         if e.get("verified"):
@@ -111,11 +110,9 @@ def github_login(request: GithubLoginRequest, db: Session = Depends(database.get
         first_name = name_parts[0] if name_parts else ""
         last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
 
-        # Check in DB
         user = db.query(models.User).filter(models.User.email == email.lower()).first()
 
         if not user:
-            # Check for username collision and handle it
             if db.query(models.User).filter(models.User.username == username).first():
                 username = f"{username}{secrets.randbelow(1000)}"
 
@@ -136,6 +133,9 @@ def github_login(request: GithubLoginRequest, db: Session = Depends(database.get
             db.add(user)
             db.commit()
             db.refresh(user)
+            
+            # Audit Log: GitHub Registration
+            record_audit_log(db, "registration_github", user.id, "user", user.username, f"User registered via GitHub: {user.username}", target_id=user.id, target_type="user", request=req)
 
         if user.is_banned:
             raise HTTPException(status_code=403, detail="Your account has been banned. Please contact support.")
@@ -144,6 +144,10 @@ def github_login(request: GithubLoginRequest, db: Session = Depends(database.get
         jwt_token = utils.create_access_token(
             data={"sub": user.username}, expires_delta=access_token_expires
         )
+        
+        # Audit Log: GitHub Login
+        record_audit_log(db, "login_github", user.id, "user", user.username, f"User logged in via GitHub: {user.username}", request=req)
+        
         return {"access_token": jwt_token, "token_type": "bearer"}
 
     except HTTPException as he:
@@ -153,10 +157,8 @@ def github_login(request: GithubLoginRequest, db: Session = Depends(database.get
         raise HTTPException(status_code=500, detail=f"GitHub login failed: {str(e)}")
 
 @router.post("/google-login", response_model=schemas.Token)
-def google_login(request: GoogleLoginRequest, db: Session = Depends(database.get_db)):
+def google_login(req: Request, request: GoogleLoginRequest, db: Session = Depends(database.get_db)):
     try:
-        # Try fetching user info with the token (treating it as an Access Token)
-        # This is compatible with useGoogleLogin hook in React
         response = google_requests.requests.get(
             'https://www.googleapis.com/oauth2/v3/userinfo',
             headers={'Authorization': f'Bearer {request.token}'}
@@ -174,7 +176,6 @@ def google_login(request: GoogleLoginRequest, db: Session = Depends(database.get
             last_name = user_info.get('family_name', '')
             picture = user_info.get('picture')
         else:
-            # If fetching fails, try verifying it as an ID Token (fallback)
             try:
                 id_info = id_token.verify_oauth2_token(
                     request.token,
@@ -191,17 +192,13 @@ def google_login(request: GoogleLoginRequest, db: Session = Depends(database.get
         if not email:
             raise HTTPException(status_code=400, detail="Email not found in Google token")
 
-        # Check if user exists
         user = db.query(models.User).filter(models.User.email == email.lower()).first()
 
         if not user:
-            # Register new user
             username = email.split('@')[0]
-            # Ensure username is unique
             if db.query(models.User).filter(models.User.username == username).first():
                 username = f"{username}{secrets.randbelow(1000)}"
 
-            # Generate random password
             alphabet = string.ascii_letters + string.digits
             password = ''.join(secrets.choice(alphabet) for i in range(16))
             hashed_password = utils.get_password_hash(password)
@@ -221,19 +218,24 @@ def google_login(request: GoogleLoginRequest, db: Session = Depends(database.get
             db.add(user)
             db.commit()
             db.refresh(user)
+            
+            # Audit Log: Google Registration
+            record_audit_log(db, "registration_google", user.id, "user", user.username, f"User registered via Google: {user.username}", target_id=user.id, target_type="user", request=req)
 
         if user.is_banned:
             raise HTTPException(status_code=403, detail="Your account has been banned. Please contact support.")
 
-        # Create access token
         access_token_expires = timedelta(minutes=utils.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = utils.create_access_token(
             data={"sub": user.username}, expires_delta=access_token_expires
         )
+        
+        # Audit Log: Google Login
+        record_audit_log(db, "login_google", user.id, "user", user.username, f"User logged in via Google: {user.username}", request=req)
+        
         return {"access_token": access_token, "token_type": "bearer"}
 
     except ValueError as e:
-        # Invalid token
         raise HTTPException(status_code=401, detail=f"Invalid Google token: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Google login failed: {str(e)}")
@@ -251,18 +253,16 @@ def get_my_data(current_user: models.User = Depends(dependencies.get_current_use
 
 @router.put("/me", response_model=schemas.User)
 def update_user_profile(
+    req: Request,
     user_update: schemas.UserUpdate,
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(dependencies.get_current_user)
 ):
     if user_update.first_name is not None:
         current_user.first_name = user_update.first_name
-
     if user_update.last_name is not None:
         current_user.last_name = user_update.last_name
 
-    # Maintain full_name for backward compatibility
-    # Ensure none values are empty strings when constructing full name
     fn = current_user.first_name if current_user.first_name else ""
     ln = current_user.last_name if current_user.last_name else ""
     current_user.full_name = f"{fn} {ln}".strip()
@@ -272,39 +272,43 @@ def update_user_profile(
 
     db.commit()
     db.refresh(current_user)
+    
+    # Audit Log: Profile Update
+    record_audit_log(db, "profile_update", current_user.id, "user", current_user.username, f"User updated their profile", target_id=current_user.id, target_type="user", request=req)
+    
     return current_user
 
 @router.post("/upload-avatar")
 async def upload_avatar(
+    req: Request,
     file: UploadFile = File(...),
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(dependencies.get_current_user)
 ):
-    # Ensure directory exists
     UPLOAD_DIR = "uploads/avatars"
     if not os.path.exists(UPLOAD_DIR):
         os.makedirs(UPLOAD_DIR)
 
-    # Create valid filename
     file_ext = file.filename.split(".")[-1]
     filename = f"{current_user.id}_{int(datetime.utcnow().timestamp())}.{file_ext}"
     file_path = f"{UPLOAD_DIR}/{filename}"
 
-    # Save file
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Update User DB
-    # The URL will be /static/avatars/filename
     avatar_url = f"http://localhost:8000/uploads/avatars/{filename}"
     current_user.avatar = avatar_url
     db.commit()
     db.refresh(current_user)
 
+    # Audit Log: Avatar Upload
+    record_audit_log(db, "avatar_upload", current_user.id, "user", current_user.username, f"User uploaded a new avatar", target_id=current_user.id, target_type="user", request=req)
+
     return {"message": "Avatar uploaded successfully", "avatar_url": avatar_url}
 
 @router.put("/change-password")
 def change_password(
+    req: Request,
     password_update: schemas.UserPasswordUpdate,
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(dependencies.get_current_user)
@@ -315,6 +319,9 @@ def change_password(
     current_user.hashed_password = utils.get_password_hash(password_update.new_password)
     db.commit()
 
+    # Audit Log: Password Change
+    record_audit_log(db, "password_change", current_user.id, "user", current_user.username, f"User changed their password", target_id=current_user.id, target_type="user", request=req)
+
     return {"message": "Password updated successfully"}
 
 @router.post("/register", response_model=schemas.User)
@@ -324,25 +331,15 @@ def register(
     request: Request,
     db: Session = Depends(database.get_db)
 ):
-    # Normalize email to lowercase
     user.email = user.email.lower()
 
-    # DEBUG LOGGING
-    print(f"DEBUG: Registering user: {user.username}")
-    print(f"DEBUG: Received Data: {user.dict()}")
-    print(f"DEBUG: first_name={user.first_name}, last_name={user.last_name}")
-
     db_user = db.query(models.User).filter(models.User.username == user.username).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Username already registered")
+    if db_user: raise HTTPException(status_code=400, detail="Username already registered")
 
     db_email = db.query(models.User).filter(models.User.email == user.email).first()
-    if db_email:
-        raise HTTPException(status_code=400, detail="Email already registered")
+    if db_email: raise HTTPException(status_code=400, detail="Email already registered")
 
     hashed_password = utils.get_password_hash(user.password)
-
-    # Create full name for fallback
     full_name = f"{user.first_name} {user.last_name}".strip() if user.first_name or user.last_name else None
 
     db_user = models.User(
@@ -357,21 +354,18 @@ def register(
     db.commit()
     db.refresh(db_user)
 
-    # Send Welcome Email
+    # Audit Log: Registration
+    record_audit_log(db, "registration", db_user.id, "user", db_user.username, f"New user registered: {db_user.username}", target_id=db_user.id, target_type="user", request=request)
+
+    # Emails
     from app.email_templates import get_welcome_email_template
     subject = "Welcome to TruthLens AI! 🛡️"
     body = get_welcome_email_template(user.username)
+    try: background_tasks.add_task(send_email, subject, [user.email], body)
+    except: pass
 
-    try:
-        background_tasks.add_task(send_email, subject, [user.email], body)
-    except Exception as e:
-        print(f"Failed to send welcome email: {e}")
-
-    # Send Admin Notification
     try:
         user_agent = request.headers.get('user-agent', 'Unknown')
-
-        # Simple parsing
         platform = "Unknown"
         if "Windows" in user_agent: platform = "Windows"
         elif "Mac" in user_agent: platform = "MacOS"
@@ -385,7 +379,6 @@ def register(
         elif "Firefox" in user_agent: browser = "Firefox"
         elif "Safari" in user_agent: browser = "Safari"
 
-        # IST Time (UTC + 5:30)
         ist_offset = timedelta(hours=5, minutes=30)
         ist_now = datetime.utcnow() + ist_offset
 
@@ -406,153 +399,144 @@ def register(
     return db_user
 
 @router.post("/login", response_model=schemas.Token)
-def login(user_credentials: schemas.UserLogin, db: Session = Depends(database.get_db)):
-    # Simple JSON login
+def login(req: Request, user_credentials: schemas.UserLogin, db: Session = Depends(database.get_db)):
     user = db.query(models.User).filter(models.User.username == user_credentials.username).first()
     if not user:
-        # Check if they used email instead (normalize to lowercase)
         user = db.query(models.User).filter(models.User.email == user_credentials.username.lower()).first()
 
     if not user or not utils.verify_password(user_credentials.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+        # Audit Log: Failed Login
+        record_audit_log(
+            db, 
+            "login_failure", 
+            user.id if user else None, 
+            "user", 
+            user.username if user else user_credentials.username, 
+            f"Failed login attempt for user: {user_credentials.username}", 
+            status="failure", 
+            request=req
         )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
 
     if user.is_banned:
+        # Audit Log: Login Failure (Banned)
+        record_audit_log(db, "login_failure", user.id, "user", user.username, f"Banned user attempted to login: {user.username}", status="failure", request=req)
         raise HTTPException(status_code=403, detail="Your account has been banned. Please contact support.")
 
     access_token_expires = timedelta(minutes=utils.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = utils.create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
+    access_token = utils.create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
+    
+    # Audit Log: Login
+    record_audit_log(db, "login", user.id, "user", user.username, f"User logged in: {user.username}", request=req)
+    
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.post("/admin/login", response_model=schemas.AdminAuthChallengeResponse)
 def admin_login(
+    req: Request,
     credentials: AdminLoginRequest,
     db: Session = Depends(database.get_db),
 ):
     identifier = credentials.identifier.strip()
-    admin = (
-        db.query(models.Admin)
-        .filter(
-            or_(
-                models.Admin.username == identifier,
-                models.Admin.email == identifier.lower(),
-            )
-        )
-        .first()
-    )
+    admin = db.query(models.Admin).filter(or_(models.Admin.username == identifier, models.Admin.email == identifier.lower())).first()
 
     if not admin or not utils.verify_password(credentials.password, admin.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect admin credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+        # Audit Log: Admin Login Failure
+        record_audit_log(
+            db, 
+            "admin_login_failure", 
+            admin.id if admin else None, 
+            "admin", 
+            admin.username if admin else identifier, 
+            f"Failed admin login attempt: {identifier}", 
+            status="failure", 
+            request=req
         )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect admin credentials")
 
-    if not admin.pin:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Admin PIN is not configured",
-        )
+    if not admin.pin: raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Admin PIN is not configured")
 
-    return {
-        "requires_pin": True,
-        "admin_id": admin.id,
-        "message": "Admin credentials verified. Enter your 6-digit PIN to continue.",
-    }
+    # Audit Log: Admin Login Attempt (Credentials verified, pending PIN)
+    record_audit_log(db, "admin_login_attempt", admin.id, "admin", admin.username, f"Admin credentials verified, pending PIN verification: {admin.username}", status="pending", request=req)
+
+    return {"requires_pin": True, "admin_id": admin.id, "message": "Admin credentials verified. Enter your 6-digit PIN to continue."}
 
 
 @router.post("/admin/verify-pin", response_model=schemas.AdminAuthSuccessResponse)
 def admin_verify_pin(
+    req: Request,
     payload: AdminPinVerifyRequest,
     db: Session = Depends(database.get_db),
 ):
     if len(payload.pin) != 6 or not payload.pin.isdigit():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="PIN must be exactly 6 digits",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="PIN must be exactly 6 digits")
 
     admin = db.query(models.Admin).filter(models.Admin.id == payload.admin_id).first()
-    if not admin:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Admin account not found",
-        )
+    if not admin: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admin account not found")
 
-    stored_pin = (admin.pin or "").strip()
-    if stored_pin != payload.pin.strip():
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid PIN",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    if (admin.pin or "").strip() != payload.pin.strip():
+        # Audit Log: Admin PIN Failure
+        record_audit_log(db, "admin_pin_failure", admin.id, "admin", admin.username, f"Admin failed PIN verification: {admin.username}", status="failure", request=req)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid PIN")
 
     access_token_expires = timedelta(minutes=utils.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = utils.create_access_token(
-        data={"sub": admin.username, "role": "admin"}, expires_delta=access_token_expires
-    )
+    access_token = utils.create_access_token(data={"sub": admin.username, "role": "admin"}, expires_delta=access_token_expires)
+    
+    # Audit Log: Admin Login
+    record_audit_log(db, "admin_login", admin.id, "admin", admin.username, f"Admin logged in: {admin.username}", request=req)
+    
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.get("/admin/me", response_model=schemas.AdminData)
-def get_current_admin_data(
-    current_admin: models.Admin = Depends(dependencies.get_current_admin),
-):
+def get_current_admin_data(current_admin: models.Admin = Depends(dependencies.get_current_admin)):
     return current_admin
 
 @router.post("/logout")
-def logout():
+def logout(
+    req: Request,
+    db: Session = Depends(database.get_db), 
+    current_user: Optional[models.User] = Depends(dependencies.get_optional_current_user)
+):
+    if current_user:
+        record_audit_log(db, "logout", current_user.id, "user", current_user.username, f"User logged out: {current_user.username}", request=req)
     return {"message": "Logged out successfully"}
 
 @router.post("/forgot-password")
 async def forgot_password(
-    request: schemas.ForgotPasswordRequest,
-    background_tasks: BackgroundTasks,
+    req: Request,
+    request: schemas.ForgotPasswordRequest, 
+    background_tasks: BackgroundTasks, 
     db: Session = Depends(database.get_db)
 ):
     user = db.query(models.User).filter(models.User.email == request.email.lower()).first()
-    if not user:
-        # Don't reveal if email exists, just return success
-        return {"message": "If the email exists, a reset link has been sent."}
+    if not user: return {"message": "If the email exists, a reset link has been sent."}
 
-    # Generate Token
     token = str(uuid.uuid4())
     user.reset_token = token
     user.reset_token_expiry = datetime.utcnow() + timedelta(minutes=15)
     db.commit()
 
-    # Send Email
+    # Audit Log: Forgot Password Request
+    record_audit_log(db, "forgot_password_request", user.id, "user", user.username, f"User requested a password reset link for {user.email}", target_id=user.id, target_type="user", request=req)
+
     reset_link = f"http://localhost:5173/auth/forgot-password?token={token}"
-    subject = "Reset Your Password - TruthLens AI"
-    body = get_password_reset_template(reset_link)
-
-    background_tasks.add_task(send_email, subject, [user.email], body)
-
+    background_tasks.add_task(send_email, "Reset Your Password - TruthLens AI", [user.email], get_password_reset_template(reset_link))
     return {"message": "If the email exists, a reset link has been sent."}
 
 @router.post("/reset-password")
-def reset_password(
-    request: schemas.ResetPasswordRequest,
-    db: Session = Depends(database.get_db)
-):
+def reset_password(req: Request, request: schemas.ResetPasswordRequest, db: Session = Depends(database.get_db)):
     user = db.query(models.User).filter(models.User.reset_token == request.token).first()
+    if not user or user.reset_token_expiry < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
 
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid token")
-
-    if user.reset_token_expiry < datetime.utcnow():
-        raise HTTPException(status_code=400, detail="Token has expired")
-
-    # Update Password
     user.hashed_password = utils.get_password_hash(request.new_password)
     user.reset_token = None
     user.reset_token_expiry = None
     db.commit()
+
+    # Audit Log: Password Reset
+    record_audit_log(db, "password_reset", user.id, "user", user.username, f"User reset their password via email", target_id=user.id, target_type="user", request=req)
 
     return {"message": "Password updated successfully"}
