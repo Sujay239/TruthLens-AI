@@ -196,8 +196,24 @@ const AdminSupport = () => {
       {/* Tickets List */}
       <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="w-full">
+            <div className="h-12 border-b border-border/50 bg-muted/10 flex items-center px-6 justify-between">
+              <div className="h-4 w-1/4 rounded bg-muted/30 animate-pulse" />
+              <div className="h-4 w-1/5 rounded bg-muted/30 animate-pulse" />
+              <div className="h-4 w-1/6 rounded bg-muted/30 animate-pulse" />
+              <div className="h-4 w-1/6 rounded bg-muted/30 animate-pulse" />
+            </div>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-16 border-b border-border/50 flex items-center px-6 justify-between last:border-0">
+                <div className="flex flex-col gap-1.5 w-1/4">
+                  <div className="h-4 w-28 rounded bg-muted/40 animate-pulse" />
+                  <div className="h-3 w-36 rounded bg-muted/30 animate-pulse" />
+                </div>
+                <div className="h-4 w-1/5 rounded bg-muted/30 animate-pulse" />
+                <div className="h-6 w-16 rounded-full bg-muted/40 animate-pulse" />
+                <div className="h-4 w-1/6 rounded bg-muted/30 animate-pulse" />
+              </div>
+            ))}
           </div>
         ) : filteredTickets.length === 0 ? (
           <div className="flex h-64 flex-col items-center justify-center gap-2 text-muted-foreground">

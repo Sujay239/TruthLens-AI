@@ -36,24 +36,31 @@ export default function UserLayout() {
   });
   const API_URL = import.meta.env.VITE_API_URL;
 
-  const fetchUserData = async () => {
-    try {
-      const adminToken = localStorage.getItem("admin_token");
-      const token = localStorage.getItem("token");
-      const accessToken = token || adminToken;
-
-      if (!accessToken) {
-        return;
-      }
-
-      const response = await fetch(
-        `${API_URL}${adminToken ? "/auth/admin/me" : "/auth/myData"}`,
-        {
+    const fetchUserData = async () => {
+      try {
+        const adminToken = localStorage.getItem("admin_token");
+        const token = localStorage.getItem("token");
+        
+        let accessToken = null;
+        let endpoint = "";
+  
+        if (token) {
+          accessToken = token;
+          endpoint = "/auth/myData";
+        } else if (adminToken) {
+          accessToken = adminToken;
+          endpoint = "/auth/admin/me";
+        }
+  
+        if (!accessToken) {
+          return;
+        }
+  
+        const response = await fetch(`${API_URL}${endpoint}`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
-        },
-      );
+        });
 
       if (response.ok) {
         const data = await response.json();

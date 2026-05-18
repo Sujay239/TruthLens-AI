@@ -26,12 +26,12 @@ export default function Footer() {
             <h3 className="font-semibold text-foreground">Product</h3>
             <ul className="flex flex-col gap-3 text-sm text-muted-foreground">
               <li>
-                <a href="#" className="hover:text-blue-600 transition-colors">
+                <a href="/auth" className="hover:text-blue-600 transition-colors">
                   Fake News Detection
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-600 transition-colors">
+                <a href="/auth" className="hover:text-blue-600 transition-colors">
                   Deepfake Analysis
                 </a>
               </li>
@@ -53,17 +53,17 @@ export default function Footer() {
             <h3 className="font-semibold text-foreground">Resources</h3>
             <ul className="flex flex-col gap-3 text-sm text-muted-foreground">
               <li>
-                <a href="#" className="hover:text-blue-600 transition-colors">
+                <a href="/documentation" className="hover:text-blue-600 transition-colors">
                   Documentation
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-600 transition-colors">
+                <a href="/research" className="hover:text-blue-600 transition-colors">
                   Research Papers
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-600 transition-colors">
+                <a href="/blog" className="hover:text-blue-600 transition-colors">
                   Blog
                 </a>
               </li>

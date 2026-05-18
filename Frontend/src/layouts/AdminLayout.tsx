@@ -13,6 +13,8 @@ import {
   ChevronRight,
   LogOut,
   MessageSquare,
+  BookOpen,
+  FileText,
 } from "lucide-react";
 
 const sidebarItems = [
@@ -23,6 +25,8 @@ const sidebarItems = [
     path: "/admin",
   },
   { id: "scans", label: "Scans", icon: ListChecks, path: "/admin/scans" },
+  { id: "blogs", label: "Blogs", icon: BookOpen, path: "/admin/blogs" },
+  { id: "research", label: "Research", icon: FileText, path: "/admin/research" },
   {
     id: "feedbacks",
     label: "Feedback",

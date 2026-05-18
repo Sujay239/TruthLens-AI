@@ -24,7 +24,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -128,7 +128,69 @@ export default function AdminFeedback() {
     return matchesSearch && matchesStatus && matchesSentiment;
   });
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <div className="h-8 w-48 rounded bg-muted/40 animate-pulse mb-2" />
+          <div className="h-4 w-72 rounded bg-muted/30 animate-pulse" />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardContent className="p-6 flex items-center justify-between">
+                <div className="space-y-2">
+                  <div className="h-4 w-28 rounded bg-muted/30 animate-pulse" />
+                  <div className="h-8 w-16 rounded bg-muted/40 animate-pulse" />
+                </div>
+                <div className="h-10 w-10 rounded bg-muted/20 animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-2">
+                <div className="h-5 w-32 rounded bg-muted/40 animate-pulse" />
+                <div className="h-4 w-48 rounded bg-muted/30 animate-pulse" />
+              </div>
+              <div className="flex w-full md:w-auto items-center gap-2">
+                <div className="h-10 w-full md:w-64 rounded-md bg-muted/20 animate-pulse" />
+                <div className="h-10 w-28 rounded-md bg-muted/20 animate-pulse" />
+                <div className="h-10 w-28 rounded-md bg-muted/20 animate-pulse" />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border border-border/50 overflow-hidden">
+              <div className="w-full">
+                <div className="h-12 border-b border-border/50 bg-muted/10 flex items-center px-4 justify-between">
+                  <div className="h-4 w-1/4 rounded bg-muted/30 animate-pulse" />
+                  <div className="h-4 w-1/6 rounded bg-muted/30 animate-pulse" />
+                  <div className="h-4 w-1/4 rounded bg-muted/30 animate-pulse" />
+                  <div className="h-4 w-1/6 rounded bg-muted/30 animate-pulse" />
+                </div>
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-16 border-b border-border/50 flex items-center px-4 justify-between last:border-0">
+                    <div className="flex flex-col gap-1.5 w-1/4">
+                      <div className="h-4 w-28 rounded bg-muted/40 animate-pulse" />
+                      <div className="h-3 w-36 rounded bg-muted/30 animate-pulse" />
+                    </div>
+                    <div className="h-4 w-1/6 rounded bg-muted/30 animate-pulse" />
+                    <div className="h-4 w-1/4 rounded bg-muted/30 animate-pulse" />
+                    <div className="h-6 w-16 rounded-full bg-muted/40 animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

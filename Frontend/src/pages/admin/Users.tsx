@@ -153,7 +153,57 @@ export default function AdminUsers() {
     );
   });
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <div className="h-8 w-48 rounded bg-muted/40 animate-pulse mb-2" />
+            <div className="h-4 w-72 rounded bg-muted/30 animate-pulse" />
+          </div>
+          <div className="h-8 w-24 rounded bg-muted/20 animate-pulse" />
+        </div>
+
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-2">
+                <div className="h-5 w-32 rounded bg-muted/40 animate-pulse" />
+                <div className="h-4 w-48 rounded bg-muted/30 animate-pulse" />
+              </div>
+              <div className="h-10 w-full md:w-80 rounded-md bg-muted/20 animate-pulse" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border border-border/50 overflow-hidden">
+              <div className="w-full">
+                <div className="h-12 border-b border-border/50 bg-muted/10 flex items-center px-4 justify-between">
+                  <div className="h-4 w-1/4 rounded bg-muted/30 animate-pulse" />
+                  <div className="h-4 w-1/5 rounded bg-muted/30 animate-pulse" />
+                  <div className="h-4 w-1/6 rounded bg-muted/30 animate-pulse" />
+                  <div className="h-4 w-1/6 rounded bg-muted/30 animate-pulse" />
+                </div>
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-16 border-b border-border/50 flex items-center px-4 justify-between last:border-0">
+                    <div className="flex items-center gap-3 w-1/4">
+                      <div className="h-9 w-9 rounded-full bg-muted/30 animate-pulse" />
+                      <div className="space-y-1.5">
+                        <div className="h-4 w-28 rounded bg-muted/40 animate-pulse" />
+                        <div className="h-3 w-20 rounded bg-muted/30 animate-pulse" />
+                      </div>
+                    </div>
+                    <div className="h-4 w-1/5 rounded bg-muted/30 animate-pulse" />
+                    <div className="h-4 w-1/6 rounded bg-muted/30 animate-pulse" />
+                    <div className="h-6 w-16 rounded-full bg-muted/40 animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -31,7 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+
 
 interface DashboardData {
   stats: {
@@ -89,7 +89,77 @@ export default function UserDashboard() {
   }, [fetchDashboardData]);
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="space-y-8">
+        <div>
+          <div className="h-8 w-48 rounded bg-muted/40 animate-pulse mb-2" />
+          <div className="h-4 w-72 rounded bg-muted/30 animate-pulse" />
+        </div>
+
+        {/* Stats Cards Skeleton */}
+        <div className="grid gap-4 md:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="h-4 w-28 rounded bg-muted/40 animate-pulse" />
+                <div className="h-4 w-4 rounded-full bg-muted/30 animate-pulse" />
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="h-8 w-20 rounded bg-muted/50 animate-pulse" />
+                <div className="h-3.5 w-32 rounded bg-muted/30 animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Charts Section Skeleton */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <Card className="col-span-4">
+            <CardHeader className="space-y-2">
+              <div className="h-5 w-44 rounded bg-muted/40 animate-pulse" />
+              <div className="h-4 w-60 rounded bg-muted/30 animate-pulse" />
+            </CardHeader>
+            <CardContent className="h-[300px] flex items-end justify-between px-6 pb-6">
+              {[...Array(7)].map((_, i) => (
+                <div key={i} className="w-12 bg-muted/30 rounded-t animate-pulse" style={{ height: `${30 + i * 10}%` }} />
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-3">
+            <CardHeader className="space-y-2">
+              <div className="h-5 w-36 rounded bg-muted/40 animate-pulse" />
+              <div className="h-4 w-48 rounded bg-muted/30 animate-pulse" />
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center h-[300px]">
+              <div className="w-40 h-40 rounded-full border-8 border-muted/30 border-t-muted/50 animate-spin" />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Activity Skeleton */}
+        <Card>
+          <CardHeader className="space-y-2">
+            <div className="h-5 w-32 rounded bg-muted/40 animate-pulse" />
+            <div className="h-4 w-72 rounded bg-muted/30 animate-pulse" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between border-b border-border/50 pb-4 last:border-0 last:pb-0">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-muted/30 animate-pulse" />
+                  <div className="space-y-1.5">
+                    <div className="h-4 w-40 rounded bg-muted/40 animate-pulse" />
+                    <div className="h-3 w-28 rounded bg-muted/30 animate-pulse" />
+                  </div>
+                </div>
+                <div className="h-6 w-16 rounded-full bg-muted/30 animate-pulse" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (!data) return <div>Failed to load data.</div>;

@@ -398,3 +398,41 @@ class AuditLogResponse(AuditLogBase):
 
     class Config:
         from_attributes = True
+
+class BlogBase(BaseModel):
+    title: str
+    excerpt: str
+    content: str
+    category: str
+    author: str
+    read_time: str
+    image_url: str
+
+class BlogCreate(BlogBase):
+    pass
+
+class BlogResponse(BlogBase):
+    id: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class ResearchPaperBase(BaseModel):
+    title: str
+    authors: str
+    conference: str
+    date: str
+    abstract: str
+    keywords: str
+    file_url: str
+
+class ResearchPaperCreate(ResearchPaperBase):
+    pass
+
+class ResearchPaperResponse(ResearchPaperBase):
+    id: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

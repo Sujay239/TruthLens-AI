@@ -219,3 +219,29 @@ class AuditLog(Base):
     ip_address = Column(String(50), nullable=True)
     user_agent = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class Blog(Base):
+    __tablename__ = "blogs"
+
+    id = Column(String(36), primary_key=True, index=True) # UUID
+    title = Column(String(255), nullable=False)
+    excerpt = Column(Text, nullable=False)
+    content = Column(Text, nullable=False)
+    category = Column(String(100), nullable=False)
+    author = Column(String(255), nullable=False)
+    read_time = Column(String(50), nullable=False)
+    image_url = Column(String(500), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class ResearchPaper(Base):
+    __tablename__ = "research_papers"
+
+    id = Column(String(36), primary_key=True, index=True) # UUID
+    title = Column(String(500), nullable=False)
+    authors = Column(String(255), nullable=False)
+    conference = Column(String(255), nullable=False)
+    date = Column(String(100), nullable=False)
+    abstract = Column(Text, nullable=False)
+    keywords = Column(Text, nullable=False) # Store as comma-separated string
+    file_url = Column(String(500), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

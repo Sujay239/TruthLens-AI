@@ -286,11 +286,55 @@ export default function AdminSettings() {
     ? profile.full_name.split(" ").map(s => s[0]).join("").slice(0, 2).toUpperCase()
     : profile?.username?.[0]?.toUpperCase() ?? "A";
 
-  if (loading) return (
-    <div className="flex h-64 items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin" style={{ color: "#3b82f6" }} />
-    </div>
-  );
+  if (loading) {
+    return (
+      <div style={{ fontFamily: "Inter, sans-serif", color: "#e5e2e1" }}>
+        {/* Header */}
+        <div style={{ marginBottom: 28 }}>
+          <div className="h-8 w-40 rounded bg-muted/40 animate-pulse mb-2" />
+          <div className="h-4 w-72 rounded bg-muted/30 animate-pulse" />
+        </div>
+
+        {/* Tab bar */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+          <div className="h-9 w-24 rounded-full bg-muted/20 animate-pulse" />
+          <div className="h-9 w-24 rounded-full bg-muted/20 animate-pulse" />
+        </div>
+
+        <div style={{
+          background: "rgba(23, 23, 23, 0.48)",
+          border: "1px solid rgba(189, 182, 182, 0.72)",
+          borderRadius: 16,
+          overflow: "hidden"
+        }}>
+          {/* Avatar banner */}
+          <div style={{ padding: "32px 32px 24px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 20 }}>
+            <div className="h-20 w-20 rounded-full bg-muted/30 animate-pulse" />
+            <div className="space-y-2">
+              <div className="h-6 w-36 rounded bg-muted/40 animate-pulse" />
+              <div className="h-4 w-20 rounded bg-muted/30 animate-pulse" />
+              <div className="h-3 w-40 rounded bg-muted/20 animate-pulse" />
+            </div>
+          </div>
+
+          {/* Form */}
+          <div style={{ padding: 32, display: "flex", flexDirection: "column", gap: 20 }}>
+            <div className="space-y-2">
+              <div className="h-4 w-20 rounded bg-muted/30 animate-pulse" />
+              <div className="h-10 w-full rounded bg-muted/20 animate-pulse" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-4 w-24 rounded bg-muted/30 animate-pulse" />
+              <div className="h-10 w-full rounded bg-muted/20 animate-pulse" />
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
+              <div className="h-10 w-36 rounded bg-muted/30 animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ─── Shared styles ───────────────────────────────────────────────
   const inputStyle: React.CSSProperties = {
