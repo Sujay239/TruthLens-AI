@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/mode-toggle";
 import {
   LayoutDashboard,
   ListChecks,
@@ -16,6 +17,7 @@ import {
   BookOpen,
   FileText,
   Key,
+  Menu,
 } from "lucide-react";
 
 const sidebarItems = [
@@ -136,17 +138,19 @@ export default function AdminLayout() {
           }`}
         >
           <div className="flex items-center gap-3 border-b border-border px-4 py-4 sm:px-6 sm:py-5">
-            <div className="flex shrink-0 items-center justify-center">
-              <img src="/favicon.ico" alt="Logo" className="h-10 w-10" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Admin Console
-              </p>
-              <p className="truncate text-lg font-bold text-foreground">
-                TruthLens AI
-              </p>
-            </div>
+            <Link to="/" className="flex items-center gap-3 select-none group min-w-0">
+              <div className="flex shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-105">
+                <img src="/favicon.ico" alt="Logo" className="h-10 w-10" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-cyan-500/80 group-hover:text-cyan-500 transition-colors duration-200">
+                  Admin Console
+                </p>
+                <p className="truncate text-lg font-bold text-foreground group-hover:text-cyan-400 transition-colors duration-200">
+                  TruthLens AI
+                </p>
+              </div>
+            </Link>
             <Button
               variant="ghost"
               size="icon"
@@ -246,6 +250,35 @@ export default function AdminLayout() {
         </aside>
 
         <main className="flex min-w-0 flex-1 flex-col bg-muted/20">
+          {/* Top Sticky Header for Navigation Toggle */}
+          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 backdrop-blur px-4 sm:px-6">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                onClick={() => setIsSidebarOpen(true)}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <h1 className="text-lg font-bold text-foreground">
+                {sidebarItems.find((item) => item.id === activeSection)?.label || "Admin Console"}
+              </h1>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <ModeToggle />
+              <div className="hidden sm:flex flex-col items-end text-xs">
+                <span className="font-semibold text-foreground">
+                  {adminData.full_name.includes("(") 
+                    ? adminData.full_name.split("(")[1]?.split(")")[0]
+                    : adminData.full_name || "Admin"}
+                </span>
+                <span className="text-muted-foreground text-[10px]">Admin Access</span>
+              </div>
+            </div>
+          </header>
+
           <div className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-5 md:p-8">
             <div className="mx-auto min-w-0 max-md:max-w-7xl">
               <Outlet />

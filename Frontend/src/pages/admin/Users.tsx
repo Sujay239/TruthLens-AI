@@ -242,8 +242,9 @@ export default function AdminUsers() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border overflow-hidden">
-            <table className="w-full text-sm text-left">
+          {/* Desktop Table View */}
+          <div className="hidden md:block rounded-md border overflow-x-auto">
+            <table className="w-full text-sm text-left min-w-[800px]">
               <thead className="bg-muted/50 border-b">
                 <tr>
                   <th className="px-4 py-3 font-medium">User Profile</th>
@@ -343,6 +344,119 @@ export default function AdminUsers() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Cards View */}
+          <div className="block md:hidden space-y-4">
+            {filteredUsers.length > 0 ? (
+              filteredUsers.map((u) => (
+                <div
+                  key={u.id}
+                  className="p-4 rounded-xl border bg-card text-card-foreground shadow-sm space-y-3"
+                >
+                  {/* Profile Header Row */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="h-10 w-10 border flex-shrink-0">
+                        <AvatarImage src={u.avatar || undefined} />
+                        <AvatarFallback className="bg-primary/5 text-primary font-bold">
+                          {(u.first_name?.[0] || u.username[0]).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <h4 className="text-sm font-semibold text-foreground truncate">
+                          {`${u.first_name || ""} ${u.last_name || ""}`.trim() || u.full_name || "N/A"}
+                        </h4>
+                        <p className="text-xs text-muted-foreground italic truncate">
+                          @{u.username}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex-shrink-0">
+                      {!u.is_banned ? (
+                        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100 text-[11px] h-5">
+                          Active
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-red-700 border-red-200 bg-red-50 text-[11px] h-5">
+                          Banned
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="border-t border-border/50" />
+
+                  {/* Details Grid */}
+                  <div className="space-y-2 text-xs">
+                    {/* Contact details */}
+                    <div className="flex flex-col gap-1 text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <Mail size={12} className="text-muted-foreground/75" />
+                        <span className="truncate">{u.email}</span>
+                      </div>
+                      {u.phone_number && (
+                        <div className="flex items-center gap-1.5">
+                          <Phone size={12} className="text-muted-foreground/75" />
+                          <span>{u.phone_number}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Security & Date */}
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar size={12} className="text-muted-foreground/75" />
+                        <span className="text-[11px] text-muted-foreground">
+                          Joined: {u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A'}
+                        </span>
+                      </div>
+                      <div>
+                        {u.is_2fa_enabled ? (
+                          <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-100 text-[9px] h-4.5 px-1.5">
+                            2FA On
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground text-[9px] h-4.5 px-1.5">
+                            2FA Off
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Ban Reason Info (if banned) */}
+                    {u.is_banned && u.ban_reason && (
+                      <div className="p-2 rounded bg-red-50/50 border border-red-100 text-red-700 mt-1 flex items-start gap-1.5 text-[11px]">
+                        <Info size={12} className="mt-0.5 flex-shrink-0" />
+                        <span><strong>Reason:</strong> {u.ban_reason}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Row */}
+                  <div className="flex items-center justify-end pt-2 border-t border-border/50">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className={cn(
+                        "h-8 text-xs gap-1.5 w-full",
+                        !u.is_banned ? "text-red-600 hover:text-red-700 hover:bg-red-50" : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                      )}
+                      onClick={() => handleToggleClick(u)}
+                    >
+                      {!u.is_banned ? <ShieldAlert size={14} /> : <ShieldCheck size={14} />}
+                      {!u.is_banned ? "Ban User" : "Unban User"}
+                    </Button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-muted-foreground p-8 border rounded-lg">
+                No users found.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

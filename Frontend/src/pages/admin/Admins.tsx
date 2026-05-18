@@ -266,8 +266,9 @@ export default function AdminAdmins() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border overflow-hidden">
-            <table className="w-full text-sm text-left">
+          {/* Desktop Table View */}
+          <div className="hidden md:block rounded-md border overflow-x-auto">
+            <table className="w-full text-sm text-left min-w-[700px]">
               <thead className="bg-muted/50 border-b">
                 <tr>
                   <th className="px-4 py-3 font-medium">Admin Profile</th>
@@ -332,6 +333,90 @@ export default function AdminAdmins() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Cards View */}
+          <div className="block md:hidden space-y-4">
+            {filteredAdmins.length > 0 ? (
+              filteredAdmins.map((a) => (
+                <div
+                  key={a.id}
+                  className="p-4 rounded-xl border bg-card text-card-foreground shadow-sm space-y-3"
+                >
+                  {/* Profile Header Row */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="h-10 w-10 border flex-shrink-0">
+                        <AvatarImage src={a.avatar || undefined} />
+                        <AvatarFallback className="bg-primary/5 text-primary font-bold">
+                          {(a.full_name?.[0] || a.username[0]).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <h4 className="text-sm font-semibold text-foreground truncate">
+                          {a.full_name || "System Admin"}
+                        </h4>
+                        <p className="text-xs text-muted-foreground italic truncate">
+                          @{a.username}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex-shrink-0">
+                      {a.username === "Sujay2008" ? (
+                        <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-100 text-[10px] h-5">
+                          Project Leader
+                        </Badge>
+                      ) : a.id === currentAdmin?.id ? (
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-100 text-[10px] h-5">
+                          You
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] h-5">
+                          Admin
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="border-t border-border/50" />
+
+                  {/* Details */}
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Mail size={12} className="text-muted-foreground/75" />
+                      <span className="truncate">{a.email}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Calendar size={12} className="text-muted-foreground/75" />
+                      <span>Joined: {a.created_at ? new Date(a.created_at).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions Row */}
+                  {!(a.username === "Sujay2008" || a.id === currentAdmin?.id) && (
+                    <div className="flex items-center justify-end pt-2 border-t border-border/50">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 gap-1.5 w-full"
+                        onClick={() => {
+                          setSelectedAdmin(a);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 size={14} /> Remove Operator
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-muted-foreground p-8 border rounded-lg">
+                No administrators found.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

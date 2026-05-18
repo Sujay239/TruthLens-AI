@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard,
   History,
@@ -179,12 +179,14 @@ export default function UserLayout() {
         }`}
       >
         <div className="p-6 border-b border-border flex items-center gap-3 shrink-0">
-          <div className="flex items-center justify-center">
-            <img src="/favicon.ico" alt="Logo" className="h-8 w-8" />
-          </div>
-          <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500">
-            TruthLens
-          </span>
+          <Link to="/" className="flex items-center gap-3 select-none group w-fit">
+            <div className="flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+              <img src="/favicon.ico" alt="Logo" className="h-8 w-8" />
+            </div>
+            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500 group-hover:opacity-85 transition-opacity">
+              TruthLens
+            </span>
+          </Link>
           <Button
             variant="ghost"
             size="icon"

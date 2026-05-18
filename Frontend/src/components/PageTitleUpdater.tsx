@@ -4,6 +4,11 @@ import { useLocation } from "react-router-dom";
 const PageTitleUpdater = () => {
   const location = useLocation();
 
+  // Reset scroll position to top when navigating to any page
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   useEffect(() => {
     const path = location.pathname;
     let title = "TruthLens AI";
@@ -30,6 +35,24 @@ const PageTitleUpdater = () => {
       const page = path.split("/").pop() || "";
       const pageName = page.charAt(0).toUpperCase() + page.slice(1);
       title = `${pageName} - TruthLens AI`;
+    } else if (path === "/auth/admin") {
+      title = "Admin Login - TruthLens AI";
+    } else if (path === "/admin") {
+      title = "Admin Dashboard - TruthLens AI";
+    } else if (path.startsWith("/admin")) {
+      const page = path.split("/").pop() || "";
+      let pageName = "";
+      if (page === "audit") {
+        pageName = "Audit Logs";
+      } else if (page === "api-keys") {
+        pageName = "API Keys";
+      } else {
+        pageName = page
+          .split("-")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+      }
+      title = `Admin ${pageName} - TruthLens AI`;
     }
 
     document.title = title;

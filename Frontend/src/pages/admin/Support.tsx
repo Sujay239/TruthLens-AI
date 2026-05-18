@@ -221,8 +221,10 @@ const AdminSupport = () => {
             <p>No support tickets found.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm text-left min-w-[800px]">
               <thead className="bg-muted/50 text-muted-foreground text-xs uppercase">
                 <tr>
                   <th className="px-6 py-4 font-semibold">User</th>
@@ -315,7 +317,110 @@ const AdminSupport = () => {
               </tbody>
             </table>
           </div>
-        )}
+
+          {/* Mobile Cards View */}
+          <div className="block md:hidden p-4 space-y-4">
+            {filteredTickets.length > 0 ? (
+              filteredTickets.map((ticket) => (
+                <div
+                  key={ticket.id}
+                  className="p-4 rounded-xl border bg-card text-card-foreground shadow-sm space-y-3"
+                >
+                  {/* User Header Row */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-semibold text-foreground truncate">
+                        {ticket.full_name}
+                      </h4>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
+                        <Mail size={12} className="flex-shrink-0" /> <span className="truncate">{ticket.email}</span>
+                      </p>
+                    </div>
+
+                    <div className="flex-shrink-0">
+                      {getStatusBadge(ticket.status)}
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="border-t border-border/50" />
+
+                  {/* Details Block */}
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <span className="text-xs font-semibold text-foreground/80">Subject:</span>
+                      <p className="text-sm font-medium text-foreground">{ticket.reason}</p>
+                    </div>
+                    
+                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 italic bg-muted/20 p-2 rounded border border-border/30">
+                      "{ticket.message}"
+                    </p>
+
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1">
+                      <div className="flex items-center gap-1">
+                        <Clock size={12} className="text-muted-foreground/75" />
+                        <span>Raised: {new Date(ticket.created_at).toLocaleDateString()} {new Date(ticket.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions Row */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs text-primary border-primary/20 hover:bg-primary/5 flex-1"
+                      onClick={() => {
+                        setSelectedTicket(ticket);
+                        setViewDialogOpen(true);
+                      }}
+                    >
+                      View Details
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-8 w-10 px-0">
+                          <MoreVertical size={16} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          disabled={ticket.status === "Processing"}
+                          onClick={() => handleStatusUpdate(ticket.id, "Processing")}
+                        >
+                          <Clock className="mr-2 h-4 w-4 text-blue-500" /> Mark Processing
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          disabled={ticket.status === "Solved"}
+                          onClick={() => handleStatusUpdate(ticket.id, "Solved")}
+                        >
+                          <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-500" /> Mark Solved
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          disabled={ticket.status === "Rejected"}
+                          className="text-rose-500 focus:text-rose-600"
+                          onClick={() => {
+                            setSelectedTicket(ticket);
+                            setRejectDialogOpen(true);
+                          }}
+                        >
+                          <XCircle className="mr-2 h-4 w-4" /> Reject Ticket
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-muted-foreground p-8 border rounded-lg">
+                No support tickets found.
+              </div>
+            )}
+          </div>
+        </>
+      )}
       </div>
 
       {/* View Ticket Dialog */}

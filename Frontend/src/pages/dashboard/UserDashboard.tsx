@@ -319,10 +319,10 @@ export default function UserDashboard() {
               data.recent_activity.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between p-4 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors gap-3 sm:gap-4 min-w-0"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-background flex items-center justify-center border border-border">
+                  <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1 w-full sm:w-auto">
+                    <div className="h-10 w-10 flex-shrink-0 rounded-full bg-background flex items-center justify-center border border-border">
                       {item.type === "image" && (
                         <ImageIcon className="h-5 w-5 text-blue-500" />
                       )}
@@ -342,15 +342,15 @@ export default function UserDashboard() {
                         <Activity className="h-5 w-5 text-gray-500" />
                       )}
                     </div>
-                    <div>
-                      <h4 className="text-sm font-medium">{item.name}</h4>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-medium truncate" title={item.name}>{item.name}</h4>
                       <p className="text-xs text-muted-foreground">
                         {item.date}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 flex-shrink-0 w-full sm:w-auto mt-1 sm:mt-0 pt-2 sm:pt-0 border-t border-border/10 sm:border-0">
                     <Badge
                       variant={
                         ["Real", "Clean", "Safe"].includes(item.status)
@@ -390,12 +390,14 @@ export default function UserDashboard() {
                     >
                       {item.status}
                     </Badge>
-                    <span className="text-sm font-bold text-muted-foreground w-12 text-right">
-                      {item.confidence}
-                    </span>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-muted-foreground w-12 text-right">
+                        {item.confidence}
+                      </span>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))

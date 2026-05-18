@@ -514,7 +514,8 @@ export default function AdminScans() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          {/* Desktop Table View */}
+          <div className="hidden md:block rounded-md border">
             <div className="relative w-full overflow-auto">
               <table className="w-full caption-bottom text-sm text-left">
                 <thead className="[&_tr]:border-b">
@@ -608,6 +609,83 @@ export default function AdminScans() {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* Mobile Cards View */}
+          <div className="block md:hidden space-y-4">
+            {filteredData.length > 0 ? (
+              filteredData.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-4 rounded-xl border bg-card text-card-foreground shadow-sm space-y-3"
+                >
+                  {/* File Header Info */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-9 w-9 flex-shrink-0 rounded-full bg-muted flex items-center justify-center border border-border">
+                        {getIcon(item.type)}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-sm font-semibold truncate" title={item.name}>
+                          {item.name}
+                        </h4>
+                        <p className="text-xs text-muted-foreground truncate">
+                          by {item.user_name}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge className={`${getStatusColor(item.result)} flex-shrink-0`}>
+                      {item.result}
+                    </Badge>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="border-t border-border/50" />
+
+                  {/* Scan Info Grid */}
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                      <span className="text-muted-foreground block mb-0.5">Format</span>
+                      <span className="font-medium text-foreground">{item.type}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block mb-0.5">Confidence</span>
+                      <span className="font-semibold text-primary">{item.confidence}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block mb-0.5">Date</span>
+                      <span className="font-medium text-foreground truncate block" title={item.date}>
+                        {item.date.split(",")[0]}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions Row */}
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs flex items-center gap-1.5"
+                      onClick={() => openDetails(item)}
+                    >
+                      <Eye className="h-3.5 w-3.5 text-blue-500" /> View Details
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs flex items-center gap-1.5"
+                      onClick={() => generatePDF(item)}
+                    >
+                      <Download className="h-3.5 w-3.5 text-green-500" /> PDF Report
+                    </Button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-muted-foreground p-8 border rounded-lg">
+                No results found.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

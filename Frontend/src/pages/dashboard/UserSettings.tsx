@@ -538,7 +538,7 @@ export default function UserSettings() {
               />
             ))}
           </div>
-          <DialogFooter className="sm:justify-center">
+          <DialogFooter className="sm:justify-center max-sm:gap-4">
             <Button
               type="button"
               variant="secondary"

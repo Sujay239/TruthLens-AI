@@ -222,7 +222,7 @@ export default function AdminApiKeys() {
           </div>
         </CardHeader>
 
-        <CardContent className="p-0 overflow-x-auto">
+        <CardContent className="p-0">
           {loading ? (
             <div className="p-6 space-y-4">
               <div className="flex gap-4">
@@ -241,63 +241,125 @@ export default function AdminApiKeys() {
               </p>
             </div>
           ) : (
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-border/40 bg-muted/15 text-xs uppercase tracking-wider font-semibold text-muted-foreground">
-                  <th className="p-4 pl-6">Owner Profile</th>
-                  <th className="p-4">Key Details</th>
-                  <th className="p-4">Lifetimes</th>
-                  <th className="p-4">Programmatic Info</th>
-                  <th className="p-4 pr-6 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/40 text-sm">
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[800px]">
+                  <thead>
+                    <tr className="border-b border-border/40 bg-muted/15 text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+                      <th className="p-4 pl-6">Owner Profile</th>
+                      <th className="p-4">Key Details</th>
+                      <th className="p-4">Lifetimes</th>
+                      <th className="p-4">Programmatic Info</th>
+                      <th className="p-4 pr-6 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40 text-sm">
+                    {filteredKeys.map((key) => {
+                      const isExpired = key.expires_at && new Date(key.expires_at) < new Date();
+                      return (
+                        <tr key={key.id} className="hover:bg-muted/5 transition-colors">
+                          {/* Owner details */}
+                          <td className="p-4 pl-6">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5 font-semibold text-foreground">
+                                <User className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span>{key.user_name}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <Mail className="h-3.5 w-3.5" />
+                                <span>{key.user_email}</span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Key details */}
+                          <td className="p-4">
+                            <div className="space-y-1">
+                              <span className="font-semibold text-foreground">{key.name}</span>
+                              <div className="font-mono text-xs text-muted-foreground bg-muted/40 px-2 py-0.5 rounded w-fit border border-border/30">
+                                {key.key_prefix}xxxxxxxxxxxxxxxx
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Lifetimes */}
+                          <td className="p-4">
+                            <div className="space-y-1 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span>Issued: {formatDate(key.created_at)}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span>Expires: {formatDate(key.expires_at)}</span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Programmatic status */}
+                          <td className="p-4">
+                            <div className="space-y-1.5">
+                              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border ${
+                                !key.is_active
+                                  ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                  : isExpired 
+                                    ? "bg-red-500/10 text-red-500 border-red-500/20"
+                                    : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              }`}>
+                                {!key.is_active ? "Revoked" : (isExpired ? "Expired" : "Active")}
+                              </span>
+                              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span>Last Used: {formatDate(key.last_used_at)}</span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="p-4 pr-6 text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => triggerRevokeDialog(key)}
+                              disabled={!key.is_active}
+                              className="text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                              title={!key.is_active ? "This API Key has already been revoked" : "Revoke API Key"}
+                            >
+                              <Trash2 className="h-4.5 w-4.5" />
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards View */}
+              <div className="block md:hidden p-4 space-y-4">
                 {filteredKeys.map((key) => {
                   const isExpired = key.expires_at && new Date(key.expires_at) < new Date();
                   return (
-                    <tr key={key.id} className="hover:bg-muted/5 transition-colors">
-                      {/* Owner details */}
-                      <td className="p-4 pl-6">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1.5 font-semibold text-foreground">
-                            <User className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span>{key.user_name}</span>
+                    <div
+                      key={key.id}
+                      className="p-4 rounded-xl border bg-card text-card-foreground shadow-sm space-y-3"
+                    >
+                      {/* Owner Header Info */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 font-semibold text-foreground truncate">
+                            <User className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                            <span className="truncate">{key.user_name}</span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Mail className="h-3.5 w-3.5" />
-                            <span>{key.user_email}</span>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Key details */}
-                      <td className="p-4">
-                        <div className="space-y-1">
-                          <span className="font-semibold text-foreground">{key.name}</span>
-                          <div className="font-mono text-xs text-muted-foreground bg-muted/40 px-2 py-0.5 rounded w-fit border border-border/30">
-                            {key.key_prefix}xxxxxxxxxxxxxxxx
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate mt-0.5">
+                            <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="truncate">{key.user_email}</span>
                           </div>
                         </div>
-                      </td>
 
-                      {/* Lifetimes */}
-                      <td className="p-4">
-                        <div className="space-y-1 text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span>Issued: {formatDate(key.created_at)}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span>Expires: {formatDate(key.expires_at)}</span>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Programmatic status */}
-                      <td className="p-4">
-                        <div className="space-y-1.5">
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border ${
+                        <div className="flex-shrink-0">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold border ${
                             !key.is_active
                               ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
                               : isExpired 
@@ -306,31 +368,55 @@ export default function AdminApiKeys() {
                           }`}>
                             {!key.is_active ? "Revoked" : (isExpired ? "Expired" : "Active")}
                           </span>
-                          <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+                        </div>
+                      </div>
+
+                      {/* Divider */}
+                      <div className="border-t border-border/50" />
+
+                      {/* Details */}
+                      <div className="space-y-2 text-xs text-muted-foreground">
+                        <div>
+                          <div className="font-semibold text-foreground mb-1">{key.name}</div>
+                          <div className="font-mono text-[11px] text-muted-foreground bg-muted/40 px-2 py-0.5 rounded w-fit border border-border/30">
+                            {key.key_prefix}xxxxxxxxxxxxxxxx
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1 text-[11px] pt-1">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5 text-muted-foreground/75 flex-shrink-0" />
+                            <span>Issued: {formatDate(key.created_at)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="h-3.5 w-3.5 text-muted-foreground/75 flex-shrink-0" />
+                            <span>Expires: {formatDate(key.expires_at)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <TrendingUp className="h-3.5 w-3.5 text-muted-foreground/75 flex-shrink-0" />
                             <span>Last Used: {formatDate(key.last_used_at)}</span>
                           </div>
                         </div>
-                      </td>
+                      </div>
 
-                      {/* Actions */}
-                      <td className="p-4 pr-6 text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => triggerRevokeDialog(key)}
-                          disabled={!key.is_active}
-                          className="text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
-                          title={!key.is_active ? "This API Key has already been revoked" : "Revoke API Key"}
-                        >
-                          <Trash2 className="h-4.5 w-4.5" />
-                        </Button>
-                      </td>
-                    </tr>
+                      {/* Actions Row */}
+                      {key.is_active && (
+                        <div className="flex items-center justify-end pt-2 border-t border-border/50">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 gap-1.5 w-full"
+                            onClick={() => triggerRevokeDialog(key)}
+                          >
+                            <Trash2 size={14} /> Revoke API Key
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

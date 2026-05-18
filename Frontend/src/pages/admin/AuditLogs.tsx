@@ -345,9 +345,10 @@ export default function AdminAuditLogs() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-xl border border-border/50 overflow-hidden bg-background/30">
-            <div className="relative w-full overflow-auto">
-              <table className="w-full caption-bottom text-sm text-left">
+          {/* Desktop Table View */}
+          <div className="hidden md:block rounded-xl border border-border/50 overflow-hidden bg-background/30">
+            <div className="relative w-full overflow-x-auto">
+              <table className="w-full caption-bottom text-sm text-left min-w-[900px]">
                 <thead className="bg-muted/30 [&_tr]:border-b">
                   <tr className="border-b border-border/50 transition-colors">
                     <th className="h-12 px-4 align-middle font-semibold text-foreground/70 uppercase tracking-wider text-[10px]">
@@ -444,6 +445,72 @@ export default function AdminAuditLogs() {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* Mobile Cards View */}
+          <div className="block md:hidden space-y-4">
+            {filteredLogs.length > 0 ? (
+              filteredLogs.map((log) => (
+                <div
+                  key={log.id}
+                  className="p-4 rounded-xl border border-border/50 bg-card text-card-foreground shadow-sm space-y-3"
+                >
+                  {/* Action Title & Icon & Status */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-9 w-9 rounded-lg bg-background border border-border/50 flex items-center justify-center shadow-sm flex-shrink-0">
+                        {getActionIcon(log.action)}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-sm font-semibold text-foreground truncate">
+                          {formatActionName(log.action)}
+                        </h4>
+                        <p className="text-xs text-muted-foreground truncate">
+                          IP: <span className="font-mono">{log.ip_address || "Internal"}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex-shrink-0">
+                      {getStatusBadge(log.status)}
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="border-t border-border/50" />
+
+                  {/* Details block */}
+                  <div className="space-y-2 text-xs">
+                    {/* Actor information */}
+                    <div className="p-2 rounded bg-muted/40 border border-border/30 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-semibold text-foreground/90 truncate">@{log.actor_username}</span>
+                        <Badge variant="outline" className={`${getActorBadgeColor(log.actor_type)} text-[8px] h-3.5 px-1 font-bold uppercase`}>
+                          {log.actor_type}
+                        </Badge>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1 flex-shrink-0">
+                        <Database className="h-2.5 w-2.5" /> ID: {log.actor_id || "N/A"}
+                      </span>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-sm text-foreground/80 leading-relaxed pt-1">
+                      {log.description}
+                    </p>
+
+                    {/* Date/time row */}
+                    <div className="flex items-center justify-end text-[10px] text-muted-foreground pt-1">
+                      <span>{new Date(log.created_at).toLocaleDateString()} {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-muted-foreground p-8 border border-border/50 rounded-lg">
+                No activity logs found matching your criteria.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

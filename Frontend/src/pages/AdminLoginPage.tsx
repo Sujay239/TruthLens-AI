@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -166,12 +166,12 @@ export default function AdminLoginPage() {
           />
         </div>
 
-        <div className="relative z-10 flex items-center gap-2 text-lg font-bold">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-600/90 backdrop-blur-sm shadow-lg shadow-cyan-900/20">
+        <Link to="/" className="relative z-10 flex items-center gap-2 text-lg font-bold select-none group w-fit">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-600/90 backdrop-blur-sm shadow-lg shadow-cyan-900/20 transition-transform duration-300 group-hover:scale-105">
             <Shield className="h-5 w-5 text-white" />
           </div>
-          <span className="text-xl tracking-tight">TruthLens AI</span>
-        </div>
+          <span className="text-xl tracking-tight group-hover:text-cyan-300 transition-colors duration-200">TruthLens AI</span>
+        </Link>
 
         <div className="relative z-10 max-w-lg space-y-8 mb-10">
           <div className="space-y-4">
@@ -225,12 +225,12 @@ export default function AdminLoginPage() {
 
         <div className="relative z-10 w-full max-w-[440px]">
           <div className="mb-8 text-center lg:hidden">
-            <div className="mb-4 flex items-center justify-center gap-2">
-              <div className="flex items-center justify-center">
+            <Link to="/" className="mb-4 flex items-center justify-center gap-2 select-none group">
+              <div className="flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
                 <img src="/favicon.ico" alt="Logo" className="h-10 w-10" />
               </div>
-              <span className="text-xl font-bold">TruthLens AI</span>
-            </div>
+              <span className="text-xl font-bold group-hover:text-cyan-600 transition-colors duration-200">TruthLens AI</span>
+            </Link>
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-300">
               <UserCog className="h-3.5 w-3.5" />
               Admin Portal

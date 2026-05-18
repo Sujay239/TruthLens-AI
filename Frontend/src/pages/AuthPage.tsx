@@ -209,12 +209,12 @@ export default function AuthPage() {
         </div>
 
         {/* Logo */}
-        <div className="relative z-10 flex items-center gap-2 text-lg font-bold">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600/90 backdrop-blur-sm shadow-lg shadow-blue-900/20">
+        <Link to="/" className="relative z-10 flex items-center gap-2 text-lg font-bold select-none group w-fit">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600/90 backdrop-blur-sm shadow-lg shadow-blue-900/20 transition-transform duration-300 group-hover:scale-105">
             <img src="/favicon.ico" alt="Logo" className="h-8 w-8" />
           </div>
-          <span className="text-xl tracking-tight">TruthLens AI</span>
-        </div>
+          <span className="text-xl tracking-tight group-hover:text-blue-400 transition-colors duration-200">TruthLens AI</span>
+        </Link>
 
         {/* Hero Content */}
         <div className="relative z-10 space-y-8 max-w-lg mb-10">
@@ -272,12 +272,12 @@ export default function AuthPage() {
 
         <div className="w-full max-w-[400px] z-10">
           <div className="text-center lg:hidden mb-8">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="flex items-center justify-center">
-            <img src="/favicon.ico" alt="TruthLens AI Logo" className="h-10 w-10" />
-          </div>
-              <span className="text-xl font-bold">TruthLens AI</span>
-            </div>
+            <Link to="/" className="inline-flex items-center justify-center gap-2 mb-4 select-none group">
+              <div className="flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+                <img src="/favicon.ico" alt="TruthLens AI Logo" className="h-10 w-10" />
+              </div>
+              <span className="text-xl font-bold group-hover:text-blue-600 transition-colors duration-200">TruthLens AI</span>
+            </Link>
             <h1 className="text-2xl font-bold">Welcome back</h1>
             <p className="text-muted-foreground mt-2">
               Enter your credentials to access your account

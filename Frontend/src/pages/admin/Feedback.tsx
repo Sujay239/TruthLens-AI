@@ -279,8 +279,9 @@ export default function AdminFeedback() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border overflow-hidden">
-            <table className="w-full text-sm text-left">
+          {/* Desktop Table View */}
+          <div className="hidden md:block rounded-md border overflow-x-auto">
+            <table className="w-full text-sm text-left min-w-[800px]">
               <thead className="bg-muted/50 border-b">
                 <tr>
                   <th className="px-4 py-3 font-medium">User & Scan</th>
@@ -357,6 +358,103 @@ export default function AdminFeedback() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Cards View */}
+          <div className="block md:hidden space-y-4">
+            {filteredFeedbacks.length > 0 ? (
+              filteredFeedbacks.map((f) => (
+                <div
+                  key={f.id}
+                  className="p-4 rounded-xl border bg-card text-card-foreground shadow-sm space-y-3"
+                >
+                  {/* User & Scan Header Row */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-semibold text-foreground truncate">
+                        {f.user_name}
+                      </h4>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
+                        <ExternalLink size={12} className="flex-shrink-0" /> <span className="truncate">{f.filename}</span>
+                      </p>
+                    </div>
+
+                    <div className="flex-shrink-0">
+                      {f.rating === "like" ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 font-semibold bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+                          <ThumbsUp size={12} /> Like
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-red-600 font-semibold bg-red-50 border border-red-100 px-2 py-0.5 rounded-full">
+                          <ThumbsDown size={12} /> Correction
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="border-t border-border/50" />
+
+                  {/* Details Block */}
+                  <div className="space-y-2 text-xs">
+                    {f.corrected_label && (
+                      <div>
+                        <Badge variant="outline" className="border-red-200 bg-red-50 text-red-700 text-[10px] h-4.5 px-1.5 font-bold">
+                          Should be: {f.corrected_label}
+                        </Badge>
+                      </div>
+                    )}
+                    
+                    <p className="text-sm text-muted-foreground leading-relaxed italic bg-muted/20 p-2 rounded border border-border/30">
+                      "{f.message || "No comment"}"
+                    </p>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="text-[10px] text-muted-foreground">
+                        {f.created_at ? new Date(f.created_at).toLocaleDateString() : 'N/A'}
+                      </div>
+                      <div>
+                        {f.model_processed ? (
+                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100 text-[9px] h-4.5 px-1.5">
+                            <CheckCircle2 size={10} className="mr-0.5" /> Processed
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-yellow-700 border-yellow-200 bg-yellow-50 text-[9px] h-4.5 px-1.5">
+                            <Clock size={10} className="mr-0.5" /> Pending Review
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions Row */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex-1"
+                      onClick={() => navigate(`/admin/scans?search=${encodeURIComponent(f.filename)}&highlightId=${f.analysis_log_id}`)}
+                    >
+                      <Eye size={12} /> See Scan
+                    </Button>
+                    {!f.model_processed && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs gap-1 flex-1"
+                        onClick={() => processFeedback(f.id)}
+                      >
+                        <BrainCircuit size={12} /> Train Model
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-muted-foreground p-8 border rounded-lg">
+                No feedback records found.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
