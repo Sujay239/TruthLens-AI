@@ -15,6 +15,7 @@ import {
   MessageSquare,
   BookOpen,
   FileText,
+  Key,
 } from "lucide-react";
 
 const sidebarItems = [
@@ -37,6 +38,7 @@ const sidebarItems = [
   { id: "admins", label: "Admins", icon: Shield, path: "/admin/admins" },
   { id: "Support", label: "Support", icon: Headset, path: "/admin/support" },
   { id: "logs", label: "Audit Logs", icon: Activity, path: "/admin/audit" },
+  { id: "api-keys", label: "API Keys", icon: Key, path: "/admin/api-keys" },
   {
     id: "settings",
     label: "Settings",

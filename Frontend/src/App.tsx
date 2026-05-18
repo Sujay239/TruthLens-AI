@@ -12,6 +12,7 @@ import AdminSettings from "./pages/admin/Settings";
 import AdminAuditLogs from "./pages/admin/AuditLogs";
 import AdminBlogs from "./pages/admin/AdminBlogs";
 import AdminResearch from "./pages/admin/AdminResearch";
+import AdminApiKeys from "./pages/admin/ApiKeys";
 import GithubCallback from "./pages/GithubCallback";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -23,10 +24,12 @@ import BlogPage from "./pages/BlogPage";
 import SingleBlogPage from "./pages/SingleBlogPage";
 import ResearchPapers from "./pages/ResearchPapers";
 import Documentation from "./pages/Documentation";
+import EnterprisePage from "./pages/EnterprisePage";
 import UserLayout from "./layouts/UserLayout";
 import UserDashboard from "./pages/dashboard/UserDashboard";
 import AnalysisHistory from "./pages/dashboard/AnalysisHistory";
 import UserSettings from "./pages/dashboard/UserSettings";
+import UserApiKeys from "./pages/dashboard/ApiKeys";
 import NotFound from "./pages/NotFound";
 import FakeNewsDetection from "./pages/dashboard/FakeNewsDetection";
 import DeepfakeImageDetection from "./pages/dashboard/DeepfakeImageDetection";
@@ -69,6 +72,7 @@ function App() {
           <Route path="/blog/:id" element={<SingleBlogPage />} />
           <Route path="/research" element={<ResearchPapers />} />
           <Route path="/documentation" element={<Documentation />} />
+          <Route path="/enterprise" element={<EnterprisePage />} />
 
           <Route element={<AdminProtectedRoute />}>
             <Route path="/admin" element={<AdminLayout />}>
@@ -82,6 +86,7 @@ function App() {
               <Route path="audit" element={<AdminAuditLogs />} />
               <Route path="blogs" element={<AdminBlogs />} />
               <Route path="research" element={<AdminResearch />} />
+              <Route path="api-keys" element={<AdminApiKeys />} />
             </Route>
           </Route>
 
@@ -91,6 +96,7 @@ function App() {
               <Route index element={<UserDashboard />} />
               <Route path="history" element={<AnalysisHistory />} />
               <Route path="settings" element={<UserSettings />} />
+              <Route path="api-keys" element={<UserApiKeys />} />
               <Route path="tools/fake-news" element={<FakeNewsDetection />} />
               <Route
                 path="tools/deepfake-image"

@@ -436,3 +436,32 @@ class ResearchPaperResponse(ResearchPaperBase):
 
     class Config:
         from_attributes = True
+
+# --- API Key Schemas ---
+class APIKeyCreate(BaseModel):
+    name: str
+    expires_in_days: Optional[int] = None # None = Never
+
+class APIKeyResponse(BaseModel):
+    id: int
+    name: str
+    key_prefix: str
+    created_at: datetime
+    expires_at: Optional[datetime] = None
+    is_active: bool
+    last_used_at: Optional[datetime] = None
+    raw_key: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class APIKeyCreatedResponse(APIKeyResponse):
+    raw_key: str # Returned ONLY on creation!
+
+class AdminAPIKeyResponse(APIKeyResponse):
+    user_id: int
+    user_name: str
+    user_email: str
+
+    class Config:
+        from_attributes = True

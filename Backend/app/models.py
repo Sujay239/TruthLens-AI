@@ -245,3 +245,19 @@ class ResearchPaper(Base):
     keywords = Column(Text, nullable=False) # Store as comma-separated string
     file_url = Column(String(500), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class APIKey(Base):
+    __tablename__ = "api_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+    key_prefix = Column(String(16), nullable=False)
+    key_hash = Column(String(255), unique=True, index=True, nullable=False)
+    raw_key = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)
+    is_active = Column(Boolean, default=True)
+    last_used_at = Column(DateTime, nullable=True)
+
+    user = relationship("User", backref="api_keys")

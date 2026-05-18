@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {  Star, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -9,20 +9,20 @@ export default function Header() {
     <header className="w-full border-b bg-background px-6 py-4">
       <div className="flex items-center justify-between mx-auto max-w-7xl">
         {/* Left Side: Logo & Branding */}
-        <div className="flex items-center gap-3">
+        <Link to="/" className="flex items-center gap-3 select-none group">
           {/* Logo Icon */}
-          <img src="/favicon.ico" alt="TruthLens AI Logo" className="h-8 w-8" />
+          <img src="/favicon.ico" alt="TruthLens AI Logo" className="h-8 w-8 transition-transform duration-300 group-hover:scale-105" />
 
           {/* Text Content */}
           <div className="flex flex-col">
-            <h1 className="text-lg font-bold leading-none">
+            <h1 className="text-lg font-bold leading-none text-foreground group-hover:text-blue-600 transition-colors duration-200">
               TruthLens AI
             </h1>
             <span className="text-xs font-medium text-muted-foreground mt-1">
               Expose • Analyze • Secure
             </span>
           </div>
-        </div>
+        </Link>
 
         {/* Right Side: Actions */}
         <div className="flex items-center gap-2 md:gap-6">

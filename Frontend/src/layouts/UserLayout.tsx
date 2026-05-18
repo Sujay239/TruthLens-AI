@@ -18,6 +18,7 @@ import {
   Mic,
   BrainCircuit,
   ShieldAlert,
+  Key,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -99,6 +100,11 @@ export default function UserLayout() {
       label: "Analysis History",
       icon: <History size={20} />,
       path: "/dashboard/history",
+    },
+    {
+      label: "API Access",
+      icon: <Key size={20} />,
+      path: "/dashboard/api-keys",
     },
   ];
 

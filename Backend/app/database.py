@@ -22,6 +22,15 @@ def init_db():
 
     Base.metadata.create_all(bind=engine)
 
+    # Safely alter the table to add raw_key if it does not exist (for existing DBs)
+    from sqlalchemy import text
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE api_keys ADD COLUMN raw_key VARCHAR(255) NULL;"))
+            conn.commit()
+    except Exception:
+        pass
+
 def get_db():
     db = SessionLocal()
     try:

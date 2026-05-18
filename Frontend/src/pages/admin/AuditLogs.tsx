@@ -31,6 +31,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 interface AuditLog {
   id: number;
@@ -53,6 +62,9 @@ export default function AdminAuditLogs() {
   const [searchTerm, setSearchTerm] = useState("");
   const [actorTypeFilter, setActorTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [isClearOpen, setIsClearOpen] = useState(false);
+  const [clearRange, setClearRange] = useState("24h");
+  const [clearing, setClearing] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
@@ -84,6 +96,32 @@ export default function AdminAuditLogs() {
       console.error("Failed to fetch audit logs", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleClearLogs = async () => {
+    setClearing(true);
+    try {
+      const response = await fetch(`${API_URL}/admin/audit/clear?time_range=${clearRange}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+        },
+      });
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(result.message || "Audit logs cleared successfully");
+        setIsClearOpen(false);
+        fetchLogs();
+      } else {
+        const err = await response.json();
+        toast.error(err.detail || "Failed to clear audit logs");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Network error clearing audit logs");
+    } finally {
+      setClearing(false);
     }
   };
 
@@ -290,8 +328,18 @@ export default function AdminAuditLogs() {
                 size="icon" 
                 className="shrink-0 border-border/50"
                 onClick={fetchLogs}
+                title="Refresh Logs"
               >
                 <RefreshCw className="h-4 w-4" />
+              </Button>
+
+              <Button 
+                variant="destructive" 
+                className="h-10 text-xs flex items-center gap-2 font-semibold shadow-md bg-red-600 hover:bg-red-700 transition-all shrink-0"
+                onClick={() => setIsClearOpen(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Clear Logs
               </Button>
             </div>
           </div>
@@ -399,6 +447,63 @@ export default function AdminAuditLogs() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={isClearOpen} onOpenChange={setIsClearOpen}>
+        <DialogContent className="sm:max-w-[420px] bg-[#1a1b1e] border border-border/50 text-foreground shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-red-500 flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-red-500 animate-pulse" />
+              Clear Audit Logs
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground mt-2 text-xs">
+              Select the time range of activity logs you want to permanently delete from the database. This action is irreversible.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-2.5 py-4">
+            {[
+              { value: "24h", label: "Last 24 Hours", desc: "Purges logs from the past 24 hours" },
+              { value: "7days", label: "Last 7 Days", desc: "Purges logs from the past week" },
+              { value: "15days", label: "Last 15 Days", desc: "Purges logs from the past 15 days" },
+              { value: "30days", label: "Last 30 Days", desc: "Purges logs from the past month" },
+              { value: "all", label: "All Time", desc: "Wipes the entire audit logs table completely" },
+            ].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setClearRange(option.value)}
+                className={`flex flex-col items-start p-3 rounded-lg border text-left transition-all duration-200 ${
+                  clearRange === option.value
+                    ? "bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_12px_rgba(239,68,68,0.1)]"
+                    : "bg-muted/10 border-border/30 text-muted-foreground hover:bg-muted/20 hover:text-foreground"
+                }`}
+              >
+                <span className="font-semibold text-sm">{option.label}</span>
+                <span className="text-[11px] opacity-80 mt-0.5">{option.desc}</span>
+              </button>
+            ))}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 border-t border-border/30 pt-4 mt-2">
+            <Button
+              variant="ghost"
+              onClick={() => setIsClearOpen(false)}
+              disabled={clearing}
+              className="hover:bg-muted/20 text-muted-foreground text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleClearLogs}
+              disabled={clearing}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs px-4"
+            >
+              {clearing ? "Clearing Logs..." : "Confirm & Clear"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
