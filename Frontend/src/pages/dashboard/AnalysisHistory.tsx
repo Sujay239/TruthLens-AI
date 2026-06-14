@@ -21,7 +21,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { jsPDF } from "jspdf";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+
+import ScanFeedback from "@/components/ScanFeedback";
 
 export default function AnalysisHistory() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,7 +51,8 @@ export default function AnalysisHistory() {
         const mappedData = data.map((item: any) => ({
           id: item.id,
           name: item.filename,
-          type: item.file_type, // "Image", "Video" etc.
+          // Prefer the explicit scan_type for richer categories (e.g. fake_news -> News)
+          type: item.scan_type === "fake_news" ? "News" : item.file_type,
           date: new Date(item.date_created).toLocaleDateString(), // Simple formatting
           result: item.result_label,
           confidence:
@@ -86,6 +88,8 @@ export default function AnalysisHistory() {
     switch (type) {
       case "Image":
         return <ImageIcon className="h-4 w-4 text-blue-500" />;
+      case "News":
+        return <FileText className="h-4 w-4 text-blue-500" />;
       case "Video":
         return <Video className="h-4 w-4 text-purple-500" />;
       case "Audio":
@@ -95,6 +99,14 @@ export default function AnalysisHistory() {
       default:
         return <FileText className="h-4 w-4" />;
     }
+  };
+
+  const openDetails = (item: any) => {
+    setSelectedItem(item);
+  };
+
+  const closeDetails = () => {
+    setSelectedItem(null);
   };
 
   const getStatusColor = (result: string) => {
@@ -279,7 +291,52 @@ export default function AnalysisHistory() {
   };
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="space-y-8">
+        <div>
+          <div className="h-8 w-48 rounded bg-muted/40 animate-pulse mb-2" />
+          <div className="h-4 w-72 rounded bg-muted/30 animate-pulse" />
+        </div>
+
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-2">
+                <div className="h-5 w-32 rounded bg-muted/40 animate-pulse" />
+                <div className="h-4 w-48 rounded bg-muted/30 animate-pulse" />
+              </div>
+              <div className="flex w-full md:w-auto items-center gap-2">
+                <div className="h-10 w-full md:w-64 rounded-md bg-muted/20 animate-pulse" />
+                <div className="h-10 w-28 rounded-md bg-muted/20 animate-pulse" />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border border-border/50 overflow-hidden">
+              <div className="w-full">
+                <div className="h-12 border-b border-border/50 bg-muted/10 flex items-center px-4 justify-between">
+                  <div className="h-4 w-1/4 rounded bg-muted/30 animate-pulse" />
+                  <div className="h-4 w-1/6 rounded bg-muted/30 animate-pulse" />
+                  <div className="h-4 w-1/6 rounded bg-muted/30 animate-pulse" />
+                  <div className="h-4 w-1/6 rounded bg-muted/30 animate-pulse" />
+                </div>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-16 border-b border-border/50 flex items-center px-4 justify-between last:border-0">
+                    <div className="flex items-center gap-3 w-1/4">
+                      <div className="h-8 w-8 rounded-full bg-muted/30 animate-pulse" />
+                      <div className="h-4 w-32 rounded bg-muted/40 animate-pulse" />
+                    </div>
+                    <div className="h-4 w-1/6 rounded bg-muted/30 animate-pulse" />
+                    <div className="h-4 w-1/6 rounded bg-muted/30 animate-pulse" />
+                    <div className="h-6 w-16 rounded-full bg-muted/40 animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -292,7 +349,7 @@ export default function AnalysisHistory() {
               variant="ghost"
               size="icon"
               className="absolute right-4 top-4 z-50 bg-background/50 hover:bg-background"
-              onClick={() => setSelectedItem(null)}
+              onClick={closeDetails}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -375,10 +432,15 @@ export default function AnalysisHistory() {
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => setSelectedItem(null)}
+                onClick={closeDetails}
               >
                 Close
               </Button>
+
+              <ScanFeedback
+                analysisLogId={selectedItem.id}
+                currentLabel={selectedItem.result}
+              />
             </div>
           </div>
         </div>
@@ -420,6 +482,7 @@ export default function AnalysisHistory() {
                   onChange={(e) => setTypeFilter(e.target.value)}
                 >
                   <option value="All">All Types</option>
+                  <option value="News">News</option>
                   <option value="Image">Image</option>
                   <option value="Video">Video</option>
                   <option value="Audio">Audio</option>
@@ -431,7 +494,8 @@ export default function AnalysisHistory() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          {/* Desktop Table View */}
+          <div className="hidden md:block rounded-md border">
             <div className="relative w-full overflow-auto">
               <table className="w-full caption-bottom text-sm text-left">
                 <thead className="[&_tr]:border-b">
@@ -491,7 +555,7 @@ export default function AnalysisHistory() {
                               variant="ghost"
                               size="icon"
                               title="View Details"
-                              onClick={() => setSelectedItem(item)}
+                              onClick={() => openDetails(item)}
                             >
                               <Eye className="h-4 w-4 text-blue-500" />
                             </Button>
@@ -520,6 +584,83 @@ export default function AnalysisHistory() {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* Mobile Cards View */}
+          <div className="block md:hidden space-y-4">
+            {filteredData.length > 0 ? (
+              filteredData.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-4 rounded-xl border bg-card text-card-foreground shadow-sm space-y-3"
+                >
+                  {/* File Header Info */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-9 w-9 flex-shrink-0 rounded-full bg-muted flex items-center justify-center border border-border">
+                        {getIcon(item.type)}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-sm font-semibold truncate" title={item.name}>
+                          {item.name}
+                        </h4>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {item.size}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge className={`${getStatusColor(item.result)} flex-shrink-0`}>
+                      {item.result}
+                    </Badge>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="border-t border-border/50" />
+
+                  {/* Scan Info Grid */}
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                      <span className="text-muted-foreground block mb-0.5">Format</span>
+                      <span className="font-medium text-foreground">{item.type}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block mb-0.5">Confidence</span>
+                      <span className="font-semibold text-primary">{item.confidence}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block mb-0.5">Date</span>
+                      <span className="font-medium text-foreground truncate block" title={item.date}>
+                        {item.date}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions Row */}
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs flex items-center gap-1.5"
+                      onClick={() => openDetails(item)}
+                    >
+                      <Eye className="h-3.5 w-3.5 text-blue-500" /> View Details
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs flex items-center gap-1.5"
+                      onClick={() => generatePDF(item)}
+                    >
+                      <Download className="h-3.5 w-3.5 text-green-500" /> PDF Report
+                    </Button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-muted-foreground p-8 border rounded-lg">
+                No results found.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

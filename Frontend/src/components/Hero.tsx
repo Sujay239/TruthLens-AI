@@ -1,8 +1,50 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Zap, Eye } from "lucide-react";
 import heroBg from "../assets/hero-bg.jpg";
 import { useNavigate } from "react-router-dom";
+
+interface CounterProps {
+  end: number;
+  duration?: number;
+  suffix?: string;
+  decimals?: number;
+}
+
+const Counter = ({
+  end,
+  duration = 2000,
+  suffix = "",
+  decimals = 0,
+}: CounterProps) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let startTime: number | null = null;
+    let animationFrame: number;
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      setCount(progress * end);
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [end, duration]);
+
+  return (
+    <span>
+      {count.toFixed(decimals)}
+      {suffix}
+    </span>
+  );
+};
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -49,7 +91,7 @@ const Hero = () => {
             className="min-w-48 h-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-cyan-500/20 hover:scale-105 hover:shadow-cyan-500/40 transition-all border-0"
             onClick={handleStartAnalysis}
           >
-            <Shield className="h-5 w-5 mr-2" />
+            <Shield className="h-8 w-8 mr-2" />
             Start Analyzing
           </Button>
           <Button
@@ -69,7 +111,7 @@ const Hero = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-2xl mx-auto pt-12 border-t border-border/50 mt-12">
           <div className="text-center">
             <div className="text-2xl md:text-3xl font-bold text-blue-600">
-              99.2%
+              <Counter end={99.2} decimals={1} suffix="%" />
             </div>
             <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">
               Accuracy Rate
@@ -77,7 +119,7 @@ const Hero = () => {
           </div>
           <div className="text-center">
             <div className="text-2xl md:text-3xl font-bold text-cyan-600">
-              5M+
+              <Counter end={5} suffix="M+" />
             </div>
             <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">
               Content Analyzed
@@ -85,7 +127,7 @@ const Hero = () => {
           </div>
           <div className="text-center">
             <div className="text-2xl md:text-3xl font-bold text-sky-600">
-              100K+
+              <Counter end={100} suffix="K+" />
             </div>
             <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">
               Users Protected
@@ -93,7 +135,7 @@ const Hero = () => {
           </div>
           <div className="text-center">
             <div className="text-2xl md:text-3xl font-bold text-teal-600">
-              24/7
+              <Counter end={24} suffix="/7" />
             </div>
             <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">
               Real-time Detection

@@ -29,9 +29,9 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+
 
 interface DashboardData {
   stats: {
@@ -64,11 +64,7 @@ export default function UserDashboard() {
   const API_URL = import.meta.env.VITE_API_URL;
   const COLORS = ["#10b981", "#ef4444"];
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/dashboard/overview`, {
         headers: {
@@ -86,10 +82,84 @@ export default function UserDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="space-y-8">
+        <div>
+          <div className="h-8 w-48 rounded bg-muted/40 animate-pulse mb-2" />
+          <div className="h-4 w-72 rounded bg-muted/30 animate-pulse" />
+        </div>
+
+        {/* Stats Cards Skeleton */}
+        <div className="grid gap-4 md:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="h-4 w-28 rounded bg-muted/40 animate-pulse" />
+                <div className="h-4 w-4 rounded-full bg-muted/30 animate-pulse" />
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="h-8 w-20 rounded bg-muted/50 animate-pulse" />
+                <div className="h-3.5 w-32 rounded bg-muted/30 animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Charts Section Skeleton */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <Card className="col-span-4">
+            <CardHeader className="space-y-2">
+              <div className="h-5 w-44 rounded bg-muted/40 animate-pulse" />
+              <div className="h-4 w-60 rounded bg-muted/30 animate-pulse" />
+            </CardHeader>
+            <CardContent className="h-[300px] flex items-end justify-between px-6 pb-6">
+              {[...Array(7)].map((_, i) => (
+                <div key={i} className="w-12 bg-muted/30 rounded-t animate-pulse" style={{ height: `${30 + i * 10}%` }} />
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-3">
+            <CardHeader className="space-y-2">
+              <div className="h-5 w-36 rounded bg-muted/40 animate-pulse" />
+              <div className="h-4 w-48 rounded bg-muted/30 animate-pulse" />
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center h-[300px]">
+              <div className="w-40 h-40 rounded-full border-8 border-muted/30 border-t-muted/50 animate-spin" />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Activity Skeleton */}
+        <Card>
+          <CardHeader className="space-y-2">
+            <div className="h-5 w-32 rounded bg-muted/40 animate-pulse" />
+            <div className="h-4 w-72 rounded bg-muted/30 animate-pulse" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between border-b border-border/50 pb-4 last:border-0 last:pb-0">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-muted/30 animate-pulse" />
+                  <div className="space-y-1.5">
+                    <div className="h-4 w-40 rounded bg-muted/40 animate-pulse" />
+                    <div className="h-3 w-28 rounded bg-muted/30 animate-pulse" />
+                  </div>
+                </div>
+                <div className="h-6 w-16 rounded-full bg-muted/30 animate-pulse" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (!data) return <div>Failed to load data.</div>;
@@ -249,10 +319,10 @@ export default function UserDashboard() {
               data.recent_activity.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between p-4 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors gap-3 sm:gap-4 min-w-0"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-background flex items-center justify-center border border-border">
+                  <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1 w-full sm:w-auto">
+                    <div className="h-10 w-10 flex-shrink-0 rounded-full bg-background flex items-center justify-center border border-border">
                       {item.type === "image" && (
                         <ImageIcon className="h-5 w-5 text-blue-500" />
                       )}
@@ -272,15 +342,15 @@ export default function UserDashboard() {
                         <Activity className="h-5 w-5 text-gray-500" />
                       )}
                     </div>
-                    <div>
-                      <h4 className="text-sm font-medium">{item.name}</h4>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-medium truncate" title={item.name}>{item.name}</h4>
                       <p className="text-xs text-muted-foreground">
                         {item.date}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 flex-shrink-0 w-full sm:w-auto mt-1 sm:mt-0 pt-2 sm:pt-0 border-t border-border/10 sm:border-0">
                     <Badge
                       variant={
                         ["Real", "Clean", "Safe"].includes(item.status)
@@ -320,12 +390,14 @@ export default function UserDashboard() {
                     >
                       {item.status}
                     </Badge>
-                    <span className="text-sm font-bold text-muted-foreground w-12 text-right">
-                      {item.confidence}
-                    </span>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-muted-foreground w-12 text-right">
+                        {item.confidence}
+                      </span>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))

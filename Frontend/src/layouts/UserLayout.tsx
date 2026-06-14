@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard,
   History,
@@ -8,7 +8,6 @@ import {
   Menu,
   X,
   User,
-  Shield,
   Bell,
   ChevronDown,
   ChevronRight,
@@ -19,6 +18,7 @@ import {
   Mic,
   BrainCircuit,
   ShieldAlert,
+  Key,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -37,23 +37,43 @@ export default function UserLayout() {
   });
   const API_URL = import.meta.env.VITE_API_URL;
 
-  const fetchUserData = async () => {
-    try {
-      const response = await fetch(`${API_URL}/auth/myData`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+    const fetchUserData = async () => {
+      try {
+        const adminToken = localStorage.getItem("admin_token");
+        const token = localStorage.getItem("token");
+        
+        let accessToken = null;
+        let endpoint = "";
+  
+        if (token) {
+          accessToken = token;
+          endpoint = "/auth/myData";
+        } else if (adminToken) {
+          accessToken = adminToken;
+          endpoint = "/auth/admin/me";
+        }
+  
+        if (!accessToken) {
+          return;
+        }
+  
+        const response = await fetch(`${API_URL}${endpoint}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
       if (response.ok) {
         const data = await response.json();
         setUserData({
-          first_name: data.first_name || "User",
+          first_name:
+            data.first_name || data.full_name || data.username || "User",
           last_name: data.last_name || "",
           avatar: data.avatar || "",
         });
       }
-    } catch (error) {
-      console.error("Failed to fetch user data", error);
+    } catch {
+      // Keep the shell usable even if profile lookup fails temporarily.
     }
   };
 
@@ -80,6 +100,11 @@ export default function UserLayout() {
       label: "Analysis History",
       icon: <History size={20} />,
       path: "/dashboard/history",
+    },
+    {
+      label: "API Access",
+      icon: <Key size={20} />,
+      path: "/dashboard/api-keys",
     },
   ];
 
@@ -119,14 +144,16 @@ export default function UserLayout() {
 
   const handleLogout = async () => {
     try {
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("admin_token");
       await fetch(`${API_URL}/auth/logout`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
-    } catch (error) {
-      console.error("Logout failed", error);
+    } catch {
+      // Ignore logout network errors.
     } finally {
       localStorage.clear();
       // Optional: Clear session storage if used
@@ -152,12 +179,14 @@ export default function UserLayout() {
         }`}
       >
         <div className="p-6 border-b border-border flex items-center gap-3 shrink-0">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
-            <Shield className="h-5 w-5" />
-          </div>
-          <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500">
-            TruthLens
-          </span>
+          <Link to="/" className="flex items-center gap-3 select-none group w-fit">
+            <div className="flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+              <img src="/favicon.ico" alt="Logo" className="h-8 w-8" />
+            </div>
+            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500 group-hover:opacity-85 transition-opacity">
+              TruthLens
+            </span>
+          </Link>
           <Button
             variant="ghost"
             size="icon"

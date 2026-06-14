@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "../../components/ui/progress";
 import { toast } from "sonner";
+import ScanFeedback from "@/components/ScanFeedback";
 
 export default function DeepfakeVoiceDetection() {
   const [selectedAudio, setSelectedAudio] = useState<string | null>(null);
@@ -32,6 +33,7 @@ export default function DeepfakeVoiceDetection() {
   const [result, setResult] = useState<null | {
     label: "Real" | "Fake" | "Deepfake";
     confidence: number;
+    analysisLogId?: number;
     analysis: string;
     details: {
       spectralAnalysis: string;
@@ -125,6 +127,7 @@ export default function DeepfakeVoiceDetection() {
       setResult({
         label: data.label as "Real" | "Fake",
         confidence: Math.round(data.confidence_score),
+        analysisLogId: data.analysis_log_id,
         analysis: data.analysis_text,
         details: {
           spectralAnalysis: data.spectral_analysis,
@@ -378,6 +381,11 @@ export default function DeepfakeVoiceDetection() {
                       Share Result
                     </Button>
                   </div>
+
+                  <ScanFeedback
+                    analysisLogId={result.analysisLogId}
+                    currentLabel={result.label}
+                  />
                 </div>
               )}
             </CardContent>

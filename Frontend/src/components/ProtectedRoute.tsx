@@ -5,6 +5,7 @@ import { toast } from "sonner";
 const ProtectedRoute = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const API_URL = import.meta.env.VITE_API_URL;
+  const adminToken = localStorage.getItem("admin_token");
 
   useEffect(() => {
     const validateToken = async () => {
@@ -24,20 +25,18 @@ const ProtectedRoute = () => {
 
         if (response.ok) {
           setIsAuthenticated(true);
-        } else if (response.status === 401) {
-          // Token is explicitly invalid/expired — clear it
-          localStorage.removeItem("token");
-          setIsAuthenticated(false);
-          toast.error("Session expired. Please login again.");
-        } else {
-          // Server error (500, etc.) — keep token, allow access
-          // The user shouldn't be logged out due to a temporary server issue
-          setIsAuthenticated(true);
+          return;
         }
-      } catch (error) {
-        console.error("Auth validation error:", error);
-        // Network error (backend restarting/offline) — keep token, allow access
-        // JWT is self-contained, so the token is still valid even if we can't verify now
+
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          toast.error("Session expired. Please login again.");
+          setIsAuthenticated(false);
+          return;
+        }
+
+        setIsAuthenticated(true);
+      } catch {
         setIsAuthenticated(true);
       }
     };
@@ -59,7 +58,11 @@ const ProtectedRoute = () => {
     );
   }
 
-  return isAuthenticated ? <Outlet /> : <Navigate to="/auth" replace />;
+  return isAuthenticated ? (
+    <Outlet />
+  ) : (
+    <Navigate to={adminToken ? "/admin" : "/auth"} replace />
+  );
 };
 
 export default ProtectedRoute;

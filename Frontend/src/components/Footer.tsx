@@ -1,4 +1,5 @@
-import { Shield, Github, Twitter, Linkedin, Mail } from "lucide-react";
+import {  Github, Twitter, Linkedin, Mail } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function Footer() {
   return (
@@ -8,14 +9,12 @@ export default function Footer() {
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 mb-12">
           {/* Column 1: Branding */}
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
-                <Shield className="h-5 w-5" />
-              </div>
-              <span className="text-xl font-bold text-blue-600">
+            <Link to="/" className="flex items-center gap-2 select-none group w-fit">
+              <img src="/favicon.ico" alt="TruthLens AI Logo" className="h-7 w-7 transition-transform duration-300 group-hover:scale-105" />
+              <span className="text-xl font-bold text-blue-600 group-hover:text-blue-700 transition-colors duration-200">
                 TruthLens AI
               </span>
-            </div>
+            </Link>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
               Empowering digital literacy through AI-powered content
               verification. Protecting communities from misinformation and
@@ -28,22 +27,22 @@ export default function Footer() {
             <h3 className="font-semibold text-foreground">Product</h3>
             <ul className="flex flex-col gap-3 text-sm text-muted-foreground">
               <li>
-                <a href="#" className="hover:text-blue-600 transition-colors">
+                <a href="/auth" className="hover:text-blue-600 transition-colors">
                   Fake News Detection
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-600 transition-colors">
+                <a href="/auth" className="hover:text-blue-600 transition-colors">
                   Deepfake Analysis
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-600 transition-colors">
+                <a href="/dashboard/api-keys" className="hover:text-blue-600 transition-colors">
                   API Access
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-600 transition-colors">
+                <a href="/enterprise" className="hover:text-blue-600 transition-colors">
                   Enterprise
                 </a>
               </li>
@@ -55,22 +54,22 @@ export default function Footer() {
             <h3 className="font-semibold text-foreground">Resources</h3>
             <ul className="flex flex-col gap-3 text-sm text-muted-foreground">
               <li>
-                <a href="#" className="hover:text-blue-600 transition-colors">
+                <a href="/documentation" className="hover:text-blue-600 transition-colors">
                   Documentation
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-600 transition-colors">
+                <a href="/research" className="hover:text-blue-600 transition-colors">
                   Research Papers
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-600 transition-colors">
+                <a href="/blog" className="hover:text-blue-600 transition-colors">
                   Blog
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-600 transition-colors">
+                <a href="/support" className="hover:text-blue-600 transition-colors">
                   Support
                 </a>
               </li>

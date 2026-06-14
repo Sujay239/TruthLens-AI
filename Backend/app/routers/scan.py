@@ -2,6 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks
 from sqlalchemy.orm import Session
 from .. import models, schemas, database, dependencies, utils
+from ..ml.feedback_learning import apply_feedback_calibration
 import random
 import datetime
 import subprocess
@@ -17,7 +18,8 @@ router = APIRouter(
 
 # Helper to save log
 def create_analysis_log(db: Session, user_id: int, filename: str, file_type: str, 
-                       label: str, confidence: float, file_size: str, media_url: str = None, analysis_summary: dict = None):
+                       label: str, confidence: float, file_size: str, media_url: str = None,
+                       analysis_summary: dict = None, scan_type: str = None, scan_id: int = None):
     log = models.AnalysisLog(
         user_id=user_id,
         filename=filename,
@@ -26,9 +28,13 @@ def create_analysis_log(db: Session, user_id: int, filename: str, file_type: str
         confidence_score=confidence,
         file_size=file_size,
         media_url=media_url,
+        scan_type=scan_type,
+        scan_id=scan_id,
         analysis_summary=analysis_summary
     )
     db.add(log)
+    db.flush()
+    return log
     # db.commit() # We commit at the end of the main transaction
 
 # --- Fake News ---
@@ -113,6 +119,10 @@ def scan_fake_news(request: schemas.FakeNewsRequest, db: Session = Depends(datab
         semantic_consistency = "N/A"
         analysis_summary = {"content": request.text[:1000], "error": str(e)}
 
+    label, confidence, learning_summary = apply_feedback_calibration(db, "fake_news", label, confidence)
+    if learning_summary:
+        analysis_summary.update(learning_summary)
+
     # Save to FakeNewsScan Table
     scan_entry = models.FakeNewsScan(
         user_id=current_user.id,
@@ -125,9 +135,21 @@ def scan_fake_news(request: schemas.FakeNewsRequest, db: Session = Depends(datab
         analysis_text=analysis_text
     )
     db.add(scan_entry)
+    db.flush()
     
     # Save to AnalysisLog (Summary)
-    create_analysis_log(db, current_user.id, "Text Snippet", "Text", label, confidence, f"{len(request.text)} chars", analysis_summary=analysis_summary)
+    log_entry = create_analysis_log(
+        db,
+        current_user.id,
+        "Text Snippet",
+        "Text",
+        label,
+        confidence,
+        f"{len(request.text)} chars",
+        analysis_summary=analysis_summary,
+        scan_type="fake_news",
+        scan_id=scan_entry.id,
+    )
     
     db.commit()
     db.refresh(scan_entry)
@@ -135,6 +157,8 @@ def scan_fake_news(request: schemas.FakeNewsRequest, db: Session = Depends(datab
     # Return both the database entry and the search results for the AI context
     response_data = {
         "id": scan_entry.id,
+        "scan_id": scan_entry.id,
+        "analysis_log_id": log_entry.id,
         "label": scan_entry.label,
         "confidence_score": scan_entry.confidence_score,
         "analysis_text": scan_entry.analysis_text,
@@ -280,6 +304,9 @@ async def scan_image(file: UploadFile = File(...), db: Session = Depends(databas
         else:
             raise HTTPException(status_code=400, detail=result.get("error", "Image Analysis Failed"))
 
+        label, confidence, learning_summary = apply_feedback_calibration(db, "image", label, confidence)
+        analysis_summary = learning_summary or None
+
         scan_entry = models.ImageScan(
             user_id=current_user.id,
             image_url=file_url,
@@ -291,12 +318,34 @@ async def scan_image(file: UploadFile = File(...), db: Session = Depends(databas
             analysis_text=analysis_text
         )
         db.add(scan_entry)
+        db.flush()
         
         file_size_mb = f"{len(contents) / (1024*1024):.2f} MB"
-        create_analysis_log(db, current_user.id, file.filename, "Image", label, confidence, file_size_mb, file_url)
+        log_entry = create_analysis_log(
+            db,
+            current_user.id,
+            file.filename,
+            "Image",
+            label,
+            confidence,
+            file_size_mb,
+            file_url,
+            analysis_summary=analysis_summary,
+            scan_type="image",
+            scan_id=scan_entry.id,
+        )
         
         db.commit()
-        return scan_entry
+        return {
+            "analysis_log_id": log_entry.id,
+            "scan_id": scan_entry.id,
+            "label": scan_entry.label,
+            "confidence_score": scan_entry.confidence_score,
+            "analysis_text": scan_entry.analysis_text,
+            "visual_artifacts": scan_entry.visual_artifacts,
+            "pixel_consistency": scan_entry.pixel_consistency,
+            "metadata_analysis": scan_entry.metadata_analysis,
+        }
 
     except HTTPException as e:
         raise e
@@ -375,6 +424,7 @@ async def scan_video(file: UploadFile = File(...), db: Session = Depends(databas
             blinking_patterns = "Inconclusive"
             analysis_text = "Result is inconclusive. The model score is close to the decision boundary; try a higher-resolution or longer clip." + score_text
             
+        label, confidence, learning_summary = apply_feedback_calibration(db, "video", label, confidence)
         file_size_mb = f"{(size_bytes / (1024*1024)):.2f} MB"
 
         if existing_scan:
@@ -387,6 +437,7 @@ async def scan_video(file: UploadFile = File(...), db: Session = Depends(databas
             existing_scan.analysis_text = analysis_text
             existing_scan.created_at = datetime.datetime.utcnow()
             scan_entry = existing_scan
+            db.flush()
         else:
             scan_entry = models.VideoScan(
                 user_id=current_user.id,
@@ -400,10 +451,32 @@ async def scan_video(file: UploadFile = File(...), db: Session = Depends(databas
                 video_hash=calculated_hash 
             )
             db.add(scan_entry)
+            db.flush()
 
-        create_analysis_log(db, current_user.id, file.filename, "Video", label, confidence, file_size_mb, scan_entry.video_url)
+        log_entry = create_analysis_log(
+            db,
+            current_user.id,
+            file.filename,
+            "Video",
+            label,
+            confidence,
+            file_size_mb,
+            scan_entry.video_url,
+            analysis_summary=learning_summary or None,
+            scan_type="video",
+            scan_id=scan_entry.id,
+        )
         db.commit()
-        return scan_entry
+        return {
+            "analysis_log_id": log_entry.id,
+            "scan_id": scan_entry.id,
+            "label": scan_entry.label,
+            "confidence_score": scan_entry.confidence_score,
+            "analysis_text": scan_entry.analysis_text,
+            "frame_consistency": scan_entry.frame_consistency,
+            "audio_visual_sync": scan_entry.audio_visual_sync,
+            "blinking_patterns": scan_entry.blinking_patterns,
+        }
         
     except HTTPException as e:
         raise e
@@ -469,6 +542,8 @@ async def scan_audio(file: UploadFile = File(...), db: Session = Depends(databas
             background_noise = "Natural ambient noise"
             analysis_text = "Audio appears to be authentic human speech."
             
+        final_label, confidence, learning_summary = apply_feedback_calibration(db, "audio", final_label, confidence)
+
         scan_entry = models.AudioScan(
             user_id=current_user.id,
             audio_url=file_url,
@@ -480,9 +555,31 @@ async def scan_audio(file: UploadFile = File(...), db: Session = Depends(databas
             analysis_text=analysis_text
         )
         db.add(scan_entry)
-        create_analysis_log(db, current_user.id, file.filename, "Audio", final_label, confidence, "N/A", scan_entry.audio_url)
+        db.flush()
+        log_entry = create_analysis_log(
+            db,
+            current_user.id,
+            file.filename,
+            "Audio",
+            final_label,
+            confidence,
+            "N/A",
+            scan_entry.audio_url,
+            analysis_summary=learning_summary or None,
+            scan_type="audio",
+            scan_id=scan_entry.id,
+        )
         db.commit()
-        return scan_entry
+        return {
+            "analysis_log_id": log_entry.id,
+            "scan_id": scan_entry.id,
+            "label": scan_entry.label,
+            "confidence_score": scan_entry.confidence_score,
+            "analysis_text": scan_entry.analysis_text,
+            "spectral_analysis": scan_entry.spectral_analysis,
+            "voice_cloning_signature": scan_entry.voice_cloning_signature,
+            "background_noise": scan_entry.background_noise,
+        }
         
     except HTTPException as e:
         raise e
@@ -519,6 +616,8 @@ def scan_ai_text(request: schemas.AiTextRequest, db: Session = Depends(database.
             repetitive_patterns = "Natural phrasing"
             analysis_text = "Content appears to be human-written."
 
+        label, confidence, learning_summary = apply_feedback_calibration(db, "ai_text", label, confidence)
+
         scan_entry = models.AiTextScan(
             user_id=current_user.id,
             content_text=request.text[:1000],
@@ -530,9 +629,32 @@ def scan_ai_text(request: schemas.AiTextRequest, db: Session = Depends(database.
             analysis_text=analysis_text
         )
         db.add(scan_entry)
-        create_analysis_log(db, current_user.id, "Text Snippet", "Text", label, confidence, f"{len(request.text)} chars", analysis_summary={"content": request.text[:1000]})
+        db.flush()
+        analysis_summary = {"content": request.text[:1000]}
+        analysis_summary.update(learning_summary)
+        log_entry = create_analysis_log(
+            db,
+            current_user.id,
+            "Text Snippet",
+            "Text",
+            label,
+            confidence,
+            f"{len(request.text)} chars",
+            analysis_summary=analysis_summary,
+            scan_type="ai_text",
+            scan_id=scan_entry.id,
+        )
         db.commit()
-        return scan_entry
+        return {
+            "analysis_log_id": log_entry.id,
+            "scan_id": scan_entry.id,
+            "label": scan_entry.label,
+            "confidence_score": scan_entry.confidence_score,
+            "analysis_text": scan_entry.analysis_text,
+            "perplexity": scan_entry.perplexity,
+            "burstiness": scan_entry.burstiness,
+            "repetitive_patterns": scan_entry.repetitive_patterns,
+        }
 
     except Exception as e:
         print(f"AI Text Scan Error: {e}")
@@ -592,6 +714,9 @@ async def scan_malware(
             heuristic_score = f"{malicious_count}/{total_engines}" if total_engines else f"{score}/100"
             analysis_text = result.get("analysis", "No analysis details.")
 
+        label, calibrated_score, learning_summary = apply_feedback_calibration(db, "malware", label, float(score))
+        score = int(round(calibrated_score))
+
         scan_entry = models.MalwareScan(
             user_id=current_user.id,
             target=target[:500],
@@ -604,9 +729,32 @@ async def scan_malware(
             analysis_text=analysis_text
         )
         db.add(scan_entry)
-        create_analysis_log(db, current_user.id, target, "Malware", label, float(score), "N/A", analysis_summary={"content": analysis_text})
+        db.flush()
+        analysis_summary = {"content": analysis_text}
+        analysis_summary.update(learning_summary)
+        log_entry = create_analysis_log(
+            db,
+            current_user.id,
+            target,
+            "Malware",
+            label,
+            float(score),
+            "N/A",
+            analysis_summary=analysis_summary,
+            scan_type="malware",
+            scan_id=scan_entry.id,
+        )
         db.commit()
-        return scan_entry
+        return {
+            "analysis_log_id": log_entry.id,
+            "scan_id": scan_entry.id,
+            "label": scan_entry.label,
+            "threat_score": scan_entry.threat_score,
+            "threat_level": scan_entry.threat_level,
+            "signature_match": scan_entry.signature_match,
+            "heuristic_score": scan_entry.heuristic_score,
+            "analysis_text": scan_entry.analysis_text,
+        }
 
     except HTTPException as e:
         raise e

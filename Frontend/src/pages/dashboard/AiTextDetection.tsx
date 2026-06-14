@@ -19,6 +19,7 @@ import {
 import { Textarea } from "../../components/ui/textarea";
 import { Progress } from "../../components/ui/progress";
 import { toast } from "sonner";
+import ScanFeedback from "@/components/ScanFeedback";
 
 export default function AiTextDetection() {
   const [text, setText] = useState("");
@@ -26,6 +27,7 @@ export default function AiTextDetection() {
   const [result, setResult] = useState<null | {
     label: "Human Written" | "AI Generated" | "Mixed Content";
     confidence: number;
+    analysisLogId?: number;
     analysis: string;
     details: {
       perplexity: string;
@@ -78,6 +80,7 @@ export default function AiTextDetection() {
       setResult({
         label: data.label as "Human Written" | "AI Generated" | "Mixed Content",
         confidence: Math.round(data.confidence_score),
+        analysisLogId: data.analysis_log_id,
         analysis: data.analysis_text,
         details: {
           perplexity: data.perplexity,
@@ -283,6 +286,11 @@ export default function AiTextDetection() {
                       Share Result
                     </Button>
                   </div>
+
+                  <ScanFeedback
+                    analysisLogId={result.analysisLogId}
+                    currentLabel={result.label}
+                  />
                 </div>
               )}
             </CardContent>
